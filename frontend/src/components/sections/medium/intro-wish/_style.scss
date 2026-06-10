@@ -1,0 +1,29 @@
+.introWish {
+    background: #ffffff;
+    background: radial-gradient(
+        circle,
+        rgb(255, 255, 255) 0%,
+        rgb(255, 255, 255) 36%,
+        #dadada 100%,
+        rgba(255, 255, 255, 1) 85%,
+        rgb(255, 255, 255) 100%
+    );
+    .gifram {
+        background-image: url("/public/media/Untitled.gif");
+        width: 100%;
+        background-position: center;
+        height: 100vh;
+        background-repeat: no-repeat;
+        color: #8B7E74;
+        span {
+            font-family: "MonteCarlo", cursive;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        p {
+            font-family: "Sans", serif;
+            font-size: 12px;
+            font-weight: 400;
+        }
+    }
+}
