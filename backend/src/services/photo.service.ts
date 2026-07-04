@@ -31,7 +31,20 @@ export async function streamTelegramPhoto(
   const r = await fetch(link.href);
   if (!r.ok) throw new Error('Rasm topilmadi');
   const buffer = Buffer.from(await r.arrayBuffer());
-  res.setHeader('Content-Type', r.headers.get('content-type') || 'image/jpeg');
-  res.setHeader('Cache-Control', 'public, max-age=86400');
+
+  // Telegram fayllarni "application/octet-stream" deb beradi — Telegram/brauzer
+  // uni rasm deb tanishi uchun kengaytmaga qarab to'g'ri MIME turini qo'yamiz.
+  const p = link.pathname.toLowerCase();
+  const type = p.endsWith('.png')
+    ? 'image/png'
+    : p.endsWith('.webp')
+    ? 'image/webp'
+    : p.endsWith('.gif')
+    ? 'image/gif'
+    : 'image/jpeg';
+
+  res.setHeader('Content-Type', type);
+  // Edge/CDN keshi — Telegram va mehmonlar uchun tez (bir marta olinsa saqlanadi)
+  res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800');
   res.end(buffer);
 }
