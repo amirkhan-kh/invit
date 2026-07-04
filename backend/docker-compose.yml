@@ -1,0 +1,16 @@
+# Lokal dev uchun MongoDB (Atlas kutmasdan ishlash uchun).
+# Ishga tushirish:  npm run db:up   (yoki: docker compose up -d)
+# To'xtatish:       npm run db:down
+# Ma'lumot `mongo-data` volume'da saqlanadi — restartda yo'qolmaydi.
+services:
+  mongo:
+    image: mongo:7
+    container_name: seramony-mongo
+    restart: unless-stopped
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:

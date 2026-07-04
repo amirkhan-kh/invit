@@ -4,8 +4,15 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
     "start:bot": "nodemon --exec ts-node src/bot-app.ts",
-    "start:api": "nodemon --exec ts-node src/server.ts"
+    "start:api": "nodemon --exec ts-node src/server.ts",
+    "build": "tsc",
+    "prod:bot": "node dist/bot-app.js",
+    "prod:api": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "test": "ts-node src/_test-flow.ts && ts-node src/_test-http.ts"
   },
   "keywords": [],
   "author": "",
@@ -23,6 +30,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^25.6.2",
+    "mongodb-memory-server": "^11.2.0",
     "nodemon": "^3.1.14",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3"

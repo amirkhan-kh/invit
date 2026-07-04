@@ -1,53 +1,54 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import { Invitation, IInvitation } from './models/invit.back'; // To'g'ri import
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import { Invitation, IInvitation } from './models/invit.back';
+import paymentRouter from './routes/payment';
+import { config } from './config';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// MongoDB-ga ulanish (Server ishlashi uchun shart)
-mongoose.connect(process.env.MONGO_URI as string)
-  .then(() => console.log("✅ API uchun MongoDB-ga ulandi"))
-  .catch(err => console.error("❌ DB ulanish xatosi:", err));
+// Yuklangan rasmlarni ulashish (/uploads/...)
+app.use('/uploads', express.static(config.uploadsDir));
+
+// MongoDB-ga ulanish
+mongoose
+  .connect(config.mongoUri)
+  .then(() => console.log('✅ API: MongoDB-ga ulandi'))
+  .catch((err) => console.error('❌ DB ulanish xatosi:', err));
+
+// To'lov route'lari (Click/Payme sandbox)
+app.use('/api', paymentRouter);
 
 /**
  * API: Slug bo'yicha taklifnomani topish
- * Request va Response turlari aniq ko'rsatilgan
  */
 app.get('/api/invitation/:slug', async (req: Request, res: Response) => {
   try {
     const { slug } = req.params;
-
-    // Invitations arrayi o'rniga Invitation.findOne ishlatamiz
-    // Bu yerda invitation turi IInvitation | null bo'ladi
     const invitation: IInvitation | null = await Invitation.findOne({ slug });
 
     if (!invitation) {
-      return res.status(404).json({ message: "Taklifnoma topilmadi" });
+      return res.status(404).json({ message: 'Taklifnoma topilmadi' });
     }
 
-    // To'lov holatini tekshirish
     if (!invitation.isPaid) {
-      return res.status(402).json({ 
+      return res.status(402).json({
         message: "To'lov qilinmagan",
-        husband: invitation.husband, // Balki to'lov sahifasida ismlar kerak bo'lar
-        wife: invitation.wife 
+        husband: invitation.husband,
+        wife: invitation.wife,
       });
     }
 
-    // Muvaffaqiyatli javob
     return res.json(invitation);
-    
   } catch (error) {
-    console.error("API Xatosi:", error);
-    return res.status(500).json({ message: "Serverda ichki xatolik yuz berdi" });
+    console.error('API Xatosi:', error);
+    return res.status(500).json({ message: 'Serverda ichki xatolik yuz berdi' });
   }
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 API Server running on port ${PORT}`));
+app.get('/', (_req, res) => res.json({ ok: true, service: 'seramony-invit API' }));
+
+const PORT = config.port;
+app.listen(PORT, () => console.log(`🚀 API Server ${PORT}-portda ishlamoqda`));

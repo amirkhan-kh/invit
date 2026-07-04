@@ -1,0 +1,2 @@
+api: npm run prod:api
+bot: npm run prod:bot

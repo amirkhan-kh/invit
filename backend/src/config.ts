@@ -1,0 +1,36 @@
+import dotenv from 'dotenv';
+import path from 'path';
+
+dotenv.config();
+
+export const config = {
+  botToken: process.env.BOT_TOKEN as string,
+
+  // MONGO_URI berilmasa — lokal (Docker) MongoDB'ga ulanadi.
+  // Bot va API alohida process bo'lgani uchun ular BITTA doimiy DB'ni bo'lishishi shart
+  // (in-memory emas). Prod'da .env'da real Atlas URI beriladi.
+  mongoUri: process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/invitationDB',
+  port: process.env.PORT || 5001,
+
+  // Taklifnoma havolasi uchun asosiy domen (keyin baxt.uz qilib qo'yasiz)
+  baseUrl: (process.env.BASE_URL || 'https://baxt.uz').replace(/\/$/, ''),
+
+  // Rasmlar shu manzil orqali beriladi (frontend shu URL'dan yuklaydi)
+  apiPublicUrl: (process.env.API_PUBLIC_URL || 'http://localhost:5001').replace(/\/$/, ''),
+
+  // Yuklangan rasmlar saqlanadigan papka
+  uploadsDir: path.resolve(__dirname, '..', 'uploads'),
+
+  // Shablon namunasi videolari (standard.mp4, medium.mp4, premium.mp4)
+  mediaDir: path.resolve(__dirname, '..', 'media'),
+
+  maxPhotos: 3,
+};
+
+export function invitationLink(slug: string): string {
+  return `${config.baseUrl}/${slug}`;
+}
+
+export function photoUrl(filename: string): string {
+  return `${config.apiPublicUrl}/uploads/${filename}`;
+}

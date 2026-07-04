@@ -12,6 +12,19 @@ dist
 dist-ssr
 *.local
 
+# Maxfiy sozlamalar — HECH QACHON commit qilinmasin
+.env
+.env.*
+!.env.example
+
+# Runtime ma'lumotlari (yuklangan rasmlar)
+uploads/*
+!uploads/.gitkeep
+
+# Shablon namuna videolari (og'ir fayllar)
+media/*
+!media/.gitkeep
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,4 +35,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-# sdcsdcsdcs
