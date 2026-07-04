@@ -89,11 +89,11 @@ const DateSection = ({ data = {} }) => {
 
       <div
         ref={ref}
-        className="adressImgg px-8 py-12 flex items-center justify-between gap-4 overflow-hidden"
+        className="adressImgg px-6 py-12 flex items-center justify-center gap-5 overflow-hidden"
       >
         <div className="text-[13px] flex flex-col gap-4 items-start">
           {venueName && <p className="text-lg font-semibold">{venueName}</p>}
-          {address && <p className="opacity-90">{address}</p>}
+          {address && <p className="opacity-90 max-w-[180px]">{address}</p>}
           <MapButton mapLink={mapLink} bg="#ffffff" color="#557693" />
         </div>
         {venuePhoto && (

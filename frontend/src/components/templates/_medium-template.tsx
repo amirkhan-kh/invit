@@ -3,10 +3,11 @@ import { Date as DateSection, Intro, IntroWish, Timing } from '../sections/mediu
 import type { TemplateProps } from '../../types/invitation.types';
 import { useBackgroundMusic } from '../../shared/useBackgroundMusic';
 import MusicToggle from '../../shared/MusicToggle';
+import ScrollHint from '../../shared/ScrollHint';
 import PhotoGallery from '../../shared/PhotoGallery';
 
 // Fon musiqasi manzili — o'z trekingizni public/audio/ ga tashlab, shu yo'lni yozing
-const MUSIC_SRC = '/audio/wedding-medium.mp3';
+const MUSIC_SRC = '/audio/wedding-medium.m4a';
 
 const MediumTemplate: React.FC<TemplateProps> = ({ data }) => {
   const { audioRef, isPlaying, toggle } = useBackgroundMusic(MUSIC_SRC);
@@ -24,6 +25,7 @@ const MediumTemplate: React.FC<TemplateProps> = ({ data }) => {
       />
 
       <MusicToggle isPlaying={isPlaying} onToggle={toggle} accent="#c9a36b" />
+      <ScrollHint accent="#c9a36b" />
 
       <Intro data={data} />
       <IntroWish data={data} />

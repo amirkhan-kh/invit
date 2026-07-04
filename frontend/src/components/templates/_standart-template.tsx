@@ -7,9 +7,9 @@ import MapButton from '../../shared/MapButton';
 import PhotoGallery from '../../shared/PhotoGallery';
 import Countdown from '../../shared/Countdown';
 import Reveal from '../../shared/Reveal';
-import { HiOutlineChevronDown } from 'react-icons/hi';
+import ScrollHint from '../../shared/ScrollHint';
 
-const MUSIC_SRC = '/audio/wedding-standard.mp3';
+const MUSIC_SRC = '/audio/wedding-standard.m4a';
 
 // Deterministik gulbarglar (Math.random ishlatmasdan)
 const petals = Array.from({ length: 10 }, (_, i) => ({
@@ -27,6 +27,7 @@ const StandardTemplate: React.FC<TemplateProps> = ({ data }) => {
     <div className="tpl-standard">
       <audio ref={audioRef} src={MUSIC_SRC} preload="auto" loop playsInline style={{ display: 'none' }} />
       <MusicToggle isPlaying={isPlaying} onToggle={toggle} accent="#7f8f6e" />
+      <ScrollHint accent="#7f8f6e" />
 
       {/* HERO */}
       <section className="std-hero">
@@ -49,9 +50,6 @@ const StandardTemplate: React.FC<TemplateProps> = ({ data }) => {
             {data.wife}
           </div>
           <div className="std-date">{data.date}</div>
-        </div>
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce text-[#a8977f]">
-          <HiOutlineChevronDown size={24} />
         </div>
       </section>
 

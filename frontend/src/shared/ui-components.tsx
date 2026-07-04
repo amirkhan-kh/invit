@@ -64,6 +64,35 @@ export const Butterfliess: React.FC = () => {
   );
 };
 
+// Markazda tabiiy uchib yuruvchi kapalaklar to'dasi (infinite orbit).
+// count — nechta kapalak. Har biri turli yo'l, o'lcham, rang va tezlikda uchadi.
+export const ButterflyField: React.FC<{ count?: number }> = ({ count = 6 }) => {
+  const defs = [
+    { size: 30, color: '#c9a36b', color2: '#f0dcb8', path: 1, dur: 15, delay: 0 },
+    { size: 22, color: '#b8905a', color2: '#e7cfa6', path: 2, dur: 19, delay: 1.6 },
+    { size: 27, color: '#caa46c', color2: '#f5e6c8', path: 3, dur: 13, delay: 0.8 },
+    { size: 18, color: '#a9814e', color2: '#e7cfa6', path: 4, dur: 21, delay: 3.1 },
+    { size: 24, color: '#c9a36b', color2: '#f0dcb8', path: 2, dur: 17, delay: 2.2 },
+    { size: 20, color: '#b8905a', color2: '#f5e6c8', path: 1, dur: 23, delay: 4.3 },
+    { size: 26, color: '#caa46c', color2: '#e7cfa6', path: 3, dur: 20, delay: 5.5 },
+    { size: 16, color: '#a9814e', color2: '#f0dcb8', path: 4, dur: 16, delay: 6.4 },
+  ];
+  const items = defs.slice(0, Math.min(count, defs.length));
+  return (
+    <div className="bf-field">
+      {items.map((b, i) => (
+        <div
+          key={i}
+          className={`bf-node bf-orbit-${b.path}`}
+          style={{ animationDuration: `${b.dur}s`, animationDelay: `${b.delay}s` }}
+        >
+          <ButterflySVG size={b.size} color={b.color} color2={b.color2} />
+        </div>
+      ))}
+    </div>
+  );
+};
+
 // Yaltiroq zarrachalar to'plami (bezak uchun) — har qanday shablonda ishlatsa bo'ladi
 export const Sparkles: React.FC<{ count?: number }> = ({ count = 14 }) => {
   // Deterministik joylashuv (Math.random ishlatmasdan)

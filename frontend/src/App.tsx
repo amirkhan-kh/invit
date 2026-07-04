@@ -3,11 +3,27 @@ import { fetchInvitation, type InvitationResult } from './api/invitation';
 import { MediumTemplates, PremiumTemplate, StandardTemplate } from './components/templates';
 import type { InvitationData, TemplateId } from './types/invitation.types';
 import { makeSampleData } from './preview/sampleData';
+import { getDemo } from './preview/demoData';
+import Landing from './components/landing/Landing';
 
-// URL'dan slug ni olamiz: baxt.uz/farhodshirin -> "farhodshirin"
-function getSlug(): string {
-  const path = window.location.pathname.replace(/^\/+|\/+$/g, '');
-  return path.split('/')[0] || '';
+// URL'ni tahlil qilamiz:
+//   /                          -> rasmiy sayt (Landing)
+//   /preview/<shablon>         -> shablon namunasi (namuna ma'lumot)
+//   /preview/<shablon>/<slug>  -> aniq taklifnoma (masalan /preview/premium/farhodshirin)
+//   /<slug>                    -> aniq taklifnoma (qisqa ko'rinish — hali ishlaydi)
+type Route =
+  | { kind: 'landing' }
+  | { kind: 'sample'; template: TemplateId }
+  | { kind: 'invitation'; slug: string };
+
+function parseRoute(): Route {
+  const parts = window.location.pathname.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
+  if (parts[0] === 'preview' && ['standard', 'medium', 'premium'].includes(parts[1])) {
+    if (parts[2]) return { kind: 'invitation', slug: parts[2] };
+    return { kind: 'sample', template: parts[1] as TemplateId };
+  }
+  if (parts[0]) return { kind: 'invitation', slug: parts[0] };
+  return { kind: 'landing' };
 }
 
 function renderTemplate(data: InvitationData) {
@@ -30,23 +46,16 @@ function Centered({ children }: { children: React.ReactNode }) {
   );
 }
 
-// /preview/premium -> shablonni namuna ma'lumot bilan ko'rsatadi (API'siz)
-function getPreview(): TemplateId | null {
-  const m = window.location.pathname.match(/^\/preview\/(standard|medium|premium)/);
-  return m ? (m[1] as TemplateId) : null;
-}
-
 function App() {
-  const preview = getPreview();
-  const slug = getSlug();
+  const route = parseRoute();
+  const slug = route.kind === 'invitation' ? route.slug : '';
+  // Portfolio (Mijozlar) namuna taklifnomasi — API'siz, doimiy
+  const demo = slug ? getDemo(slug) : null;
   const [result, setResult] = useState<InvitationResult | null>(null);
 
   useEffect(() => {
-    if (preview) return; // preview rejimida API chaqirmaymiz
-    if (!slug) {
-      setResult({ status: 'error', message: 'landing' });
-      return;
-    }
+    if (route.kind !== 'invitation' || demo) return; // sample/landing/demo -> API kerak emas
+    if (!slug) return;
     let alive = true;
     fetchInvitation(slug).then((r) => {
       if (alive) setResult(r);
@@ -54,11 +63,21 @@ function App() {
     return () => {
       alive = false;
     };
-  }, [slug, preview]);
+  }, [slug, route.kind, demo]);
 
-  // Preview rejimi — shablonni namuna ma'lumot bilan ko'rsatamiz
-  if (preview) {
-    return <div className="invite-shell">{renderTemplate(makeSampleData(preview))}</div>;
+  // Shablon namunasi (/preview/premium)
+  if (route.kind === 'sample') {
+    return <div className="invite-shell">{renderTemplate(makeSampleData(route.template))}</div>;
+  }
+
+  // Bosh sahifa — rasmiy sayt
+  if (route.kind === 'landing') {
+    return <Landing />;
+  }
+
+  // Portfolio namunasi (demo) — haqiqiy taklifnoma ko'rinishida
+  if (demo) {
+    return <div className="invite-shell">{renderTemplate(demo)}</div>;
   }
 
   // Yuklanmoqda
@@ -67,25 +86,6 @@ function App() {
       <Centered>
         <div className="font-script text-4xl text-[#c9a36b]">Taklifnoma</div>
         <div className="animate-pulse text-sm tracking-widest uppercase">Yuklanmoqda...</div>
-      </Centered>
-    );
-  }
-
-  // Bosh sahifa (slug yo'q)
-  if (result.status === 'error' && result.message === 'landing') {
-    return (
-      <Centered>
-        <div className="font-script text-5xl text-[#c9a36b]">baxt.uz</div>
-        <p className="text-lg">Onlayn to'y taklifnomalari</p>
-        <p className="text-sm text-gray-500">
-          O'z taklifnomangizni yaratish uchun Telegram botimizga o'ting.
-        </p>
-        <a
-          href="https://t.me/"
-          className="mt-2 inline-block rounded-full bg-[#c9a36b] px-6 py-2 text-white"
-        >
-          Telegram bot
-        </a>
       </Centered>
     );
   }

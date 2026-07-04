@@ -1,165 +1,107 @@
 import { useEffect, useRef, useState } from 'react';
 
-declare global {
-  interface Window {
-    webkitAudioContext: typeof AudioContext;
-  }
-}
-
 /**
  * Fon musiqasi hook'i — barcha shablonlar uchun umumiy.
- * Brauzer autoplay cheklovini aylanib o'tadi: foydalanuvchi sahifaga
- * tekkanidan va biroz scroll qilganidan so'ng musiqa asta jaranglaydi.
  *
- * Qaytaradi: { audioRef, isPlaying, toggle } — audio elementga ref,
- * ijro holati va qo'lda yoqib/o'chirish tugmasi uchun toggle.
+ * Brauzer siyosati: OVOZLI avtoijro faqat foydalanuvchi biror harakat
+ * qilgach (bosish / teginish / skroll) ruxsat etiladi. Shuning uchun:
+ *   1) sahifa ochilishida musiqani OVOZSIZ (muted) avtomatik boshlaymiz;
+ *   2) foydalanuvchining BIRINCHI harakatida ovozni yoqib, asta kuchaytiramiz.
+ * Natijada foydalanuvchi tugmani bosmasa ham, sahifaga kirib biror harakat
+ * qilishi bilan (odatda darhol skroll qiladi) musiqa jaranglaydi.
+ *
+ * Qaytaradi: { audioRef, isPlaying, toggle }.
  */
 export function useBackgroundMusic(src?: string) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [userInteracted, setUserInteracted] = useState(false);
-  const [isAudioReady, setIsAudioReady] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const scrollCountRef = useRef(0);
-  const audioAttemptedRef = useRef(false);
-  const audioContextRef = useRef<AudioContext | null>(null);
+  const startedRef = useRef(false);
+  const TARGET_VOL = 0.6;
 
-  // Audio yuklanishi
+  const fadeIn = (audio: HTMLAudioElement) => {
+    audio.volume = 0;
+    let v = 0;
+    const iv = setInterval(() => {
+      v += 0.04;
+      if (v >= TARGET_VOL) {
+        v = TARGET_VOL;
+        clearInterval(iv);
+      }
+      audio.volume = Math.min(v, TARGET_VOL);
+    }, 90);
+  };
+
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !src) return;
 
-    const handleLoadedData = () => {
-      setIsAudioReady(true);
-      audio.muted = true;
-      audio.volume = 0;
-    };
-    audio.addEventListener('loadeddata', handleLoadedData);
-    audio.load();
-    return () => audio.removeEventListener('loadeddata', handleLoadedData);
-  }, [src]);
+    audio.loop = true;
 
-  // Birinchi interaksiya
-  useEffect(() => {
-    if (!isAudioReady || userInteracted) return;
+    // 1) Ovozsiz avtoijro (brauzerlar ruxsat beradi) — musiqa "tayyor" turadi
+    audio.muted = true;
+    audio.volume = TARGET_VOL;
+    audio.play().catch(() => {});
+
+    // 2) Birinchi HAR QANDAY harakatda ovozni yoqamiz
+    const events: (keyof WindowEventMap)[] = [
+      'pointerdown',
+      'touchstart',
+      'click',
+      'keydown',
+      'scroll',
+      'wheel',
+    ];
 
     const onFirst = () => {
-      setUserInteracted(true);
-      const Ctx = window.AudioContext || window.webkitAudioContext;
-      if (!audioContextRef.current && Ctx) {
-        try {
-          audioContextRef.current = new Ctx();
-          if (audioRef.current) {
-            const source = audioContextRef.current.createMediaElementSource(audioRef.current);
-            source.connect(audioContextRef.current.destination);
-          }
-        } catch (e) {
-          console.error('AudioContext failed:', e);
-        }
-      }
+      const a = audioRef.current;
+      if (!a || startedRef.current) return;
+      a.muted = false;
+      a
+        .play()
+        .then(() => {
+          startedRef.current = true;
+          setIsPlaying(true);
+          fadeIn(a);
+          events.forEach((e) => window.removeEventListener(e, onFirst));
+        })
+        .catch(() => {
+          // Hali ruxsat yo'q — keyingi (haqiqiy) harakatni kutamiz
+          a.muted = true;
+        });
     };
 
-    window.addEventListener('click', onFirst, { once: true });
-    window.addEventListener('touchstart', onFirst, { once: true });
-    window.addEventListener('keydown', onFirst, { once: true });
+    events.forEach((e) => window.addEventListener(e, onFirst, { passive: true }));
+
     return () => {
-      window.removeEventListener('click', onFirst);
-      window.removeEventListener('touchstart', onFirst);
-      window.removeEventListener('keydown', onFirst);
+      events.forEach((e) => window.removeEventListener(e, onFirst));
     };
-  }, [isAudioReady, userInteracted]);
+  }, [src]);
 
-  const play = () => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    audio.muted = false;
-    audio.volume = 0.3;
-    const p = audio.play();
-    if (p !== undefined) {
-      p.then(() => {
-        setIsPlaying(true);
-        let v = 0.3;
-        const iv = setInterval(() => {
-          if (v < 0.7) {
-            v += 0.05;
-            audio.volume = Math.min(v, 0.7);
-          } else clearInterval(iv);
-        }, 100);
-      }).catch(() => {
-        audio.muted = true;
-        audio
-          .play()
-          .then(() => {
-            setIsPlaying(true);
-            setTimeout(() => (audio.muted = false), 1000);
-          })
-          .catch(() => console.log('Audio play failed'));
-      });
-    }
-  };
-
-  // Scroll orqali boshlash
-  useEffect(() => {
-    if (!userInteracted || !isAudioReady || audioAttemptedRef.current) return;
-
-    let lastY = window.scrollY;
-    let t: ReturnType<typeof setTimeout>;
-    let scrolling = false;
-    let startTime = 0;
-
-    const attempt = () => {
-      if (audioAttemptedRef.current) return;
-      audioAttemptedRef.current = true;
-      const ctx = audioContextRef.current;
-      if (ctx && ctx.state === 'suspended') ctx.resume().then(play).catch(play);
-      else play();
-      window.removeEventListener('scroll', onScroll);
-    };
-
-    const onScroll = () => {
-      if (audioAttemptedRef.current) return;
-      const y = window.scrollY;
-      if (Math.abs(y - lastY) > 10) {
-        if (!scrolling) {
-          scrolling = true;
-          startTime = performance.now();
-        }
-        scrollCountRef.current++;
-        lastY = y;
-        clearTimeout(t);
-        t = setTimeout(() => (scrolling = false), 300);
-        if (
-          scrollCountRef.current >= 2 ||
-          (performance.now() - startTime > 1500 && scrollCountRef.current >= 1)
-        ) {
-          attempt();
-        }
-      }
-    };
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      clearTimeout(t);
-    };
-  }, [userInteracted, isAudioReady]);
-
-  // Tozalash
+  // Sahifadan chiqilganda to'xtatish
   useEffect(() => {
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
+      const audio = audioRef.current;
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
       }
-      audioContextRef.current?.close();
     };
   }, []);
 
+  // Qo'lda yoqish/o'chirish tugmasi uchun
   const toggle = () => {
     const audio = audioRef.current;
     if (!audio) return;
-    if (audio.paused) {
-      audioAttemptedRef.current = true;
-      play();
+    if (audio.paused || audio.muted) {
+      audio.muted = false;
+      audio
+        .play()
+        .then(() => {
+          startedRef.current = true;
+          setIsPlaying(true);
+          fadeIn(audio);
+        })
+        .catch(() => {});
     } else {
       audio.pause();
       setIsPlaying(false);

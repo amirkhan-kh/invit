@@ -1,0 +1,112 @@
+.scroll-hint {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  z-index: 90;
+  pointer-events: none;
+  color: var(--sh-accent, #c9a36b);
+  opacity: 1;
+  transition: opacity 0.7s ease;
+
+  &--gone {
+    opacity: 0;
+  }
+
+  &__inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 9px;
+    animation: sh-float 2.8s ease-in-out infinite;
+  }
+
+  &__label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    opacity: 0.85;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.18);
+  }
+
+  // Klassik "sichqoncha" kapsulasi + ichida tushuvchi nuqta
+  &__mouse {
+    position: relative;
+    width: 21px;
+    height: 33px;
+    border: 1.5px solid currentColor;
+    border-radius: 11px;
+    opacity: 0.7;
+  }
+
+  &__dot {
+    position: absolute;
+    left: 50%;
+    top: 7px;
+    width: 3px;
+    height: 6px;
+    margin-left: -1.5px;
+    border-radius: 2px;
+    background: currentColor;
+    animation: sh-drop 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+
+  // Ostidagi nozik shevron
+  &__chev {
+    width: 8px;
+    height: 8px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg);
+    opacity: 0.55;
+    animation: sh-chev 1.8s ease-in-out infinite;
+  }
+}
+
+@keyframes sh-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes sh-drop {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(13px);
+    opacity: 0;
+  }
+}
+
+@keyframes sh-chev {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: rotate(45deg) translate(-1px, -1px);
+  }
+  50% {
+    opacity: 0.6;
+    transform: rotate(45deg) translate(1px, 1px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-hint__inner,
+  .scroll-hint__dot,
+  .scroll-hint__chev {
+    animation: none;
+  }
+}

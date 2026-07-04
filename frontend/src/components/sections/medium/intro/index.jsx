@@ -1,6 +1,5 @@
 import './_style.scss';
-import Butterflies, { Butterfliess, Sparkles } from '../../../../shared/ui-components';
-import { HiOutlinePlay } from 'react-icons/hi';
+import { ButterflyField, Sparkles } from '../../../../shared/ui-components';
 import { parseWeddingDate } from '../../../../types/invitation.types';
 
 const Intro = ({ data = {} }) => {
@@ -13,24 +12,19 @@ const Intro = ({ data = {} }) => {
       <div className="introImg">
         <div className="goldbg">
           <Sparkles count={12} />
-          <div className="butterfly-move">
-            <Butterflies />
-          </div>
-          <div className="move2">
-            <Butterfliess />
-          </div>
+          <ButterflyField count={6} />
 
           <div className="introTextCard">
             <div className="grid place-content-center">
               {cover ? (
                 <img
-                  className="w-24 h-32 object-cover rounded-3xl shadow-lg"
+                  className="w-36 h-48 object-cover rounded-3xl shadow-lg"
                   src={cover}
                   alt=""
                 />
               ) : (
-                <div className="w-24 h-32 rounded-3xl grid place-content-center ringframe">
-                  <span className="font-script text-3xl text-[#c9a36b]">
+                <div className="w-36 h-48 rounded-3xl grid place-content-center ringframe">
+                  <span className="font-script text-4xl text-[#c9a36b]">
                     {husband?.[0]}
                     {wife?.[0]}
                   </span>
@@ -46,9 +40,6 @@ const Intro = ({ data = {} }) => {
             {parsed.weekday && (
               <span className="weekday">{parsed.weekday}</span>
             )}
-            <div className="grid place-content-center scrollHint">
-              <HiOutlinePlay color="#8B7E74" size={16} />
-            </div>
           </div>
         </div>
       </div>

@@ -8,9 +8,9 @@ import PhotoGallery from '../../shared/PhotoGallery';
 import Countdown from '../../shared/Countdown';
 import Reveal from '../../shared/Reveal';
 import { OrnamentDivider, CornerFlourish } from '../../shared/Ornament';
-import { HiOutlineChevronDown } from 'react-icons/hi';
+import ScrollHint from '../../shared/ScrollHint';
 
-const MUSIC_SRC = '/audio/wedding-premium.mp3';
+const MUSIC_SRC = '/audio/wedding-premium.m4a';
 
 // Suzuvchi oltin zarrachalar (deterministik)
 const particles = Array.from({ length: 22 }, (_, i) => ({
@@ -30,6 +30,7 @@ const PremiumTemplate: React.FC<TemplateProps> = ({ data }) => {
     <div className="tpl-premium">
       <audio ref={audioRef} src={MUSIC_SRC} preload="auto" loop playsInline style={{ display: 'none' }} />
       <MusicToggle isPlaying={isPlaying} onToggle={toggle} accent="#e7cfa6" />
+      <ScrollHint accent="#e7cfa6" />
 
       {/* ===== HERO ===== */}
       <section className="pr-hero">
@@ -56,9 +57,6 @@ const PremiumTemplate: React.FC<TemplateProps> = ({ data }) => {
           <div className="pr-amp">&</div>
           <div className="pr-names">{data.wife}</div>
           <div className="pr-date">{parsed.weekday ? parsed.weekday.toUpperCase() : ''}</div>
-        </div>
-        <div className="pr-scroll">
-          <HiOutlineChevronDown size={26} />
         </div>
       </section>
 

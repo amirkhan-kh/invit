@@ -26,7 +26,7 @@ const MapButton: React.FC<Props> = ({
       href={mapLink}
       target="_blank"
       rel="noopener noreferrer"
-      className={`inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-medium shadow-md transition-transform active:scale-95 ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-full px-7 py-3 text-sm font-medium leading-none whitespace-nowrap shadow-md transition-transform active:scale-95 ${className}`}
       style={{ background: bg, color }}
     >
       {label} <FaMapMarkerAlt />
