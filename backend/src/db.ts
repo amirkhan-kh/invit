@@ -10,9 +10,13 @@ const cache: Cache = g._mongooseCache || (g._mongooseCache = { conn: null, promi
 export async function connectDB(): Promise<typeof mongoose> {
   if (cache.conn) return cache.conn;
   if (!cache.promise) {
-    cache.promise = mongoose.connect(config.mongoUri, {
-      serverSelectionTimeoutMS: 8000,
-    });
+    cache.promise = mongoose
+      .connect(config.mongoUri, { serverSelectionTimeoutMS: 8000 })
+      .catch((e) => {
+        // Muvaffaqiyatsiz ulanishni keshda saqlamaymiz — keyingi chaqiruvda qayta urinsin
+        cache.promise = null;
+        throw e;
+      });
   }
   cache.conn = await cache.promise;
   return cache.conn;

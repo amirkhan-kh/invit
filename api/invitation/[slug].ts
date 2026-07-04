@@ -13,8 +13,9 @@ export default async function handler(req: any, res: any) {
       return res.status(402).json({ message: "To'lov qilinmagan", husband: r.husband, wife: r.wife });
     }
     return res.status(200).json(r.data);
-  } catch (e) {
+  } catch (e: any) {
     console.error('Invitation API xatosi:', e);
-    return res.status(500).json({ message: 'Serverda ichki xatolik' });
+    // VAQTINCHA diagnostika — sabab aniqlangach olib tashlanadi
+    return res.status(500).json({ message: 'Serverda ichki xatolik', error: String(e?.message || e).slice(0, 300) });
   }
 }
