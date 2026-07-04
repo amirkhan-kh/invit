@@ -69,20 +69,21 @@ async function main() {
     telegramUserId: 12345,
   });
   check('Taklifnoma yaratildi (isPaid=false)', !inv.isPaid);
-  check('Narx 200000 (premium)', inv.price === 200000);
+  check('Narx premium', inv.price === TEMPLATE_PRICES.premium);
   check('Rasmlar 2 ta', inv.photos.length === 2);
 
   const invId = String(inv._id);
+  const P = TEMPLATE_PRICES.premium;
 
   // Qisman to'lov: 50000 (kam)
   const r1 = await applyPayment(invId, 50000);
   check('Qisman to\'lovdan keyin isPaid=false', r1.isPaid === false);
-  check('Qoldiq 150000', r1.remaining === 150000);
+  check('Qoldiq (P-50000)', r1.remaining === P - 50000);
   check('To\'langan 50000', r1.amountPaid === 50000);
 
   // Yana kam to'lov: 100000 (jami 150000)
   const r2 = await applyPayment(invId, 100000);
-  check('Ikkinchi qisman to\'lovdan keyin qoldiq 50000', r2.remaining === 50000);
+  check('Ikkinchi qisman to\'lovdan keyin qoldiq (P-150000)', r2.remaining === P - 150000);
   check('Hali to\'lanmagan', r2.isPaid === false);
 
   // Qolganini to'lash: 50000 -> to'liq

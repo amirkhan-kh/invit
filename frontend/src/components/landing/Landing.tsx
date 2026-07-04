@@ -1,4 +1,5 @@
 import './Landing.scss';
+import Reveal from '../../shared/Reveal';
 import { DEMO_LIST } from '../../preview/demoData';
 import { parseWeddingDate, TEMPLATE_PRICES } from '../../types/invitation.types';
 import {
@@ -12,14 +13,22 @@ import {
 import { FaTelegramPlane, FaInstagram } from 'react-icons/fa';
 
 const BOT = 'https://t.me/ceremony_invit_bot';
+const CONTACT = 'https://t.me/Amirxonn_uz';
+
+// Har shablon uchun namuna (portfolio demo) havolasi
+const DEMO_FOR: Record<string, string> = {
+  standard: 'jasurnigora',
+  medium: 'azizmalika',
+  premium: 'sardorkamila',
+};
 
 const fmt = (n: number) => n.toLocaleString('ru-RU');
 
-const SPARKS = Array.from({ length: 30 }, (_, i) => ({
+const SPARKS = Array.from({ length: 38 }, (_, i) => ({
   top: (i * 37 + 6) % 96,
   left: (i * 53 + 9) % 98,
-  size: 2 + (i % 3),
-  delay: (i % 7) * 0.45,
+  size: 2 + (i % 4),
+  delay: (i % 7) * 0.4,
   key: i,
 }));
 
@@ -49,6 +58,16 @@ function TelegramBtn({ className = 'l-btn l-btn-primary', label = 'Telegram botd
     <a href={BOT} target="_blank" rel="noopener noreferrer" className={className}>
       <FaTelegramPlane /> {label}
     </a>
+  );
+}
+
+function SectionHead({ eyebrow, title, lead, light }: { eyebrow: string; title: string; lead: string; light?: boolean }) {
+  return (
+    <Reveal variant="up">
+      <div className="l-eyebrow" style={light ? { color: '#e7cfa6' } : undefined}>{eyebrow}</div>
+      <h2 className="l-title">{title}</h2>
+      <p className="l-lead">{lead}</p>
+    </Reveal>
   );
 }
 
@@ -91,55 +110,55 @@ export default function Landing() {
 
       {/* ===== AFZALLIKLAR ===== */}
       <section className="l-section">
-        <div className="l-eyebrow">Afzalliklar</div>
-        <h2 className="l-title">Nega aynan biz?</h2>
-        <p className="l-lead">Qog'oz taklifnoma o'rniga — jonli, interaktiv va esda qoladigan raqamli taassurot.</p>
+        <SectionHead eyebrow="Afzalliklar" title="Nega aynan biz?" lead="Qog'oz taklifnoma o'rniga — jonli, interaktiv va esda qoladigan raqamli taassurot." />
         <div className="l-features">
-          {FEATURES.map((f) => (
-            <div className="l-feat" key={f.title}>
-              <div className="ic">{f.icon}</div>
-              <h3>{f.title}</h3>
-              <p>{f.text}</p>
-            </div>
+          {FEATURES.map((f, i) => (
+            <Reveal key={f.title} variant={i % 2 === 0 ? 'left' : 'right'} delay={(i % 3) * 90}>
+              <div className="l-feat">
+                <div className="ic">{f.icon}</div>
+                <h3>{f.title}</h3>
+                <p>{f.text}</p>
+              </div>
+            </Reveal>
           ))}
         </div>
       </section>
 
       {/* ===== JARAYON ===== */}
       <section className="l-section" id="jarayon" style={{ background: '#fff' }}>
-        <div className="l-eyebrow">Jarayon</div>
-        <h2 className="l-title">Uch oddiy qadam</h2>
-        <p className="l-lead">Dizayner ham, dastur ham kerak emas — hammasi Telegram bot ichida.</p>
+        <SectionHead eyebrow="Jarayon" title="Uch oddiy qadam" lead="Dizayner ham, dastur ham kerak emas — hammasi Telegram bot ichida." />
         <div className="l-steps">
-          {STEPS.map((s) => (
-            <div className="l-step" key={s.n}>
-              <div className="num l-play">{s.n}</div>
-              <h3>{s.title}</h3>
-              <p>{s.text}</p>
-            </div>
+          {STEPS.map((s, i) => (
+            <Reveal key={s.n} variant="up" delay={i * 130}>
+              <div className="l-step">
+                <div className="num l-play">{s.n}</div>
+                <h3>{s.title}</h3>
+                <p>{s.text}</p>
+              </div>
+            </Reveal>
           ))}
         </div>
       </section>
 
       {/* ===== SHABLONLAR ===== */}
       <section className="l-section" id="shablonlar">
-        <div className="l-eyebrow">Shablonlar</div>
-        <h2 className="l-title">Uch uslub — har didga</h2>
-        <p className="l-lead">Har birini jonli ko'rib chiqing va o'zingizga mosini tanlang.</p>
+        <SectionHead eyebrow="Shablonlar" title="Uch uslub — har didga" lead="Har birini haqiqiy namuna orqali jonli ko'rib chiqing va mosini tanlang." />
         <div className="l-tpls">
-          {TPLS.map((t) => (
-            <div className="l-tpl" key={t.id}>
-              <div className="cap" style={{ background: t.cap }}>{t.name}</div>
-              <div className="body">
-                <div className="price l-play">{fmt(t.price)} <small>so'm</small></div>
-                <ul>
-                  {t.feats.map((f) => <li key={f}>{f}</li>)}
-                </ul>
-                <a href={`/preview/${t.id}`} className="l-btn l-btn-primary" style={{ marginTop: 'auto' }}>
-                  Namunani ko'rish
-                </a>
+          {TPLS.map((t, i) => (
+            <Reveal key={t.id} variant="up" delay={i * 110}>
+              <div className="l-tpl">
+                <div className="cap" style={{ background: t.cap }}>{t.name}</div>
+                <div className="body">
+                  <div className="price l-play">{fmt(t.price)} <small>so'm</small></div>
+                  <ul>
+                    {t.feats.map((f) => <li key={f}>{f}</li>)}
+                  </ul>
+                  <a href={`/preview/${t.id}/${DEMO_FOR[t.id]}`} className="l-btn l-btn-primary" style={{ marginTop: 'auto' }}>
+                    Namunani ko'rish
+                  </a>
+                </div>
               </div>
-            </div>
+            </Reveal>
           ))}
         </div>
       </section>
@@ -147,9 +166,7 @@ export default function Landing() {
       {/* ===== NAMUNALAR / MIJOZLAR ===== */}
       <div className="l-portfolio-wrap" id="namunalar">
         <section className="l-section">
-          <div className="l-eyebrow">Mijozlar</div>
-          <h2 className="l-title">Biz tayyorlagan taklifnomalar</h2>
-          <p className="l-lead">Kartaga bosing (yoki ustiga oling — to'xtaydi) — haqiqiy taklifnoma qanday ko'rinishini jonli sinab ko'ring.</p>
+          <SectionHead eyebrow="Mijozlar" title="Biz tayyorlagan taklifnomalar" lead="Kartaga bosing (yoki ustiga oling — to'xtaydi) — haqiqiy taklifnoma qanday ko'rinishini jonli sinab ko'ring." />
           <div className="l-marquee">
             <div className="l-marquee-track">
               {[...DEMO_LIST, ...DEMO_LIST].map((d, i) => {
@@ -177,20 +194,20 @@ export default function Landing() {
       {/* ===== NARXLAR ===== */}
       <div className="l-pricing-wrap" id="narxlar">
         <section className="l-section">
-          <div className="l-eyebrow" style={{ color: '#e7cfa6' }}>Narxlar</div>
-          <h2 className="l-title">Bir martalik to'lov</h2>
-          <p className="l-lead">Yashirin to'lovlarsiz. Havola doimiy — to'y kunigacha faol turadi.</p>
+          <SectionHead eyebrow="Narxlar" title="Bir martalik to'lov" lead="Yashirin to'lovlarsiz. Havola doimiy — to'y kunigacha faol turadi." light />
           <div className="l-prices">
-            {TPLS.map((t) => (
-              <div className={`l-price${t.id === 'medium' ? ' feat' : ''}`} key={t.id}>
-                <div className="tier">{t.name}</div>
-                <div className="amt l-play">{fmt(t.price)} <small>so'm</small></div>
-                <ul>
-                  {t.feats.map((f) => <li key={f}>{f}</li>)}
-                  <li>Shaxsiy havola</li>
-                </ul>
-                <TelegramBtn className="l-btn l-btn-primary" label="Tanlash" />
-              </div>
+            {TPLS.map((t, i) => (
+              <Reveal key={t.id} variant="up" delay={i * 110}>
+                <div className={`l-price${t.id === 'medium' ? ' feat' : ''}`}>
+                  <div className="tier">{t.name}</div>
+                  <div className="amt l-play">{fmt(t.price)} <small>so'm</small></div>
+                  <ul>
+                    {t.feats.map((f) => <li key={f}>{f}</li>)}
+                    <li>Shaxsiy havola</li>
+                  </ul>
+                  <TelegramBtn className="l-btn l-btn-primary" label="Tanlash" />
+                </div>
+              </Reveal>
             ))}
           </div>
         </section>
@@ -198,9 +215,11 @@ export default function Landing() {
 
       {/* ===== CTA ===== */}
       <section className="l-cta">
-        <h2 className="l-gold-text">Baxtingizni ulashing</h2>
-        <p>Bugun o'z to'y taklifnomangizni yarating — bir necha daqiqada tayyor bo'ladi.</p>
-        <TelegramBtn />
+        <Reveal variant="zoom">
+          <h2 className="l-gold-text">Baxtingizni ulashing</h2>
+          <p>Bugun o'z to'y taklifnomangizni yarating — bir necha daqiqada tayyor bo'ladi.</p>
+          <TelegramBtn />
+        </Reveal>
       </section>
 
       {/* ===== FOOTER ===== */}
@@ -210,11 +229,14 @@ export default function Landing() {
           <a href="#shablonlar">Shablonlar</a>
           <a href="#namunalar">Namunalar</a>
           <a href="#narxlar">Narxlar</a>
-          <a href={BOT} target="_blank" rel="noopener noreferrer">Telegram</a>
+          <a href={CONTACT} target="_blank" rel="noopener noreferrer">Murojaat</a>
         </div>
+        <p style={{ fontSize: 14, color: '#b9ad97', marginBottom: 4 }}>
+          Murojaat uchun: <a href={CONTACT} target="_blank" rel="noopener noreferrer" style={{ color: '#e7cfa6' }}>@Amirxonn_uz</a>
+        </p>
         <div style={{ display: 'flex', gap: 16, justifyContent: 'center', fontSize: 20, color: '#c9a36b' }}>
-          <a href={BOT} target="_blank" rel="noopener noreferrer" aria-label="Telegram"><FaTelegramPlane /></a>
-          <a href={BOT} target="_blank" rel="noopener noreferrer" aria-label="Instagram"><FaInstagram /></a>
+          <a href={CONTACT} target="_blank" rel="noopener noreferrer" aria-label="Telegram"><FaTelegramPlane /></a>
+          <a href={CONTACT} target="_blank" rel="noopener noreferrer" aria-label="Instagram"><FaInstagram /></a>
         </div>
         <div className="cp">© 2026 baxt.uz — Onlayn to'y taklifnomalari. Barcha huquqlar himoyalangan.</div>
       </footer>
