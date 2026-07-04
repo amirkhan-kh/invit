@@ -9,14 +9,15 @@ export const config = {
   // MONGO_URI berilmasa — lokal (Docker) MongoDB'ga ulanadi.
   // Bot va API alohida process bo'lgani uchun ular BITTA doimiy DB'ni bo'lishishi shart
   // (in-memory emas). Prod'da .env'da real Atlas URI beriladi.
-  mongoUri: process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/invitationDB',
+  mongoUri: (process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/invitationDB').trim(),
   port: process.env.PORT || 5001,
 
-  // Taklifnoma havolasi uchun asosiy domen (keyin baxt.uz qilib qo'yasiz)
-  baseUrl: (process.env.BASE_URL || 'https://baxt.uz').replace(/\/$/, ''),
+  // Taklifnoma havolasi uchun asosiy domen (keyin baxt.uz qilib qo'yasiz).
+  // .trim() — env qiymatida tasodifiy bo'shliq bo'lsa ham havola buzilmasin.
+  baseUrl: (process.env.BASE_URL || 'https://baxt.uz').trim().replace(/\/$/, ''),
 
   // Rasmlar shu manzil orqali beriladi (frontend shu URL'dan yuklaydi)
-  apiPublicUrl: (process.env.API_PUBLIC_URL || 'http://localhost:5001').replace(/\/$/, ''),
+  apiPublicUrl: (process.env.API_PUBLIC_URL || 'http://localhost:5001').trim().replace(/\/$/, ''),
 
   // Yuklangan rasmlar saqlanadigan papka
   uploadsDir: path.resolve(__dirname, '..', 'uploads'),

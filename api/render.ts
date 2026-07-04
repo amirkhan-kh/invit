@@ -67,7 +67,7 @@ export default async function handler(req: any, res: any) {
   }
 
   const title = data ? `${data.husband} & ${data.wife} — Taklifnoma` : "💍 To'y taklifnomasi — baxt.uz";
-  const image = data && data.image ? data.image : GENERIC_IMG;
+  const image = data && data.image ? data.image.trim() : GENERIC_IMG;
   const desc = data
     ? `${data.husband} va ${data.wife}ning to'y taklifnomasiga taklif qilinasiz. Ochish uchun bosing 💍`
     : "Nafis onlayn to'y taklifnomasi — animatsiya, musiqa va xarita bilan.";
