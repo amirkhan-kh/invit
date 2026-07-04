@@ -100,6 +100,43 @@ export function validateInviteText(
   return { error: null, value: text };
 }
 
+// Taklif matni tilini aniqlaydi (Gemini'siz, oddiy mantiq):
+//  - lotin              -> o'zbekcha (uz)
+//  - o'zbek kirili (ўқғҳ)-> inglizcha (en)  [foydalanuvchi qoidasi]
+//  - rus kirili         -> ruscha (ru)
+export function detectLang(text: string): 'uz' | 'ru' | 'en' {
+  const t = text || '';
+  const hasCyrillic = /[а-яёА-ЯЁ]/.test(t);
+  if (!hasCyrillic) return 'uz';
+  if (/[ўқғҳЎҚҒҲ]/.test(t)) return 'en';
+  return 'ru';
+}
+
+// To'lovdan keyingi xabar uchun tilga mos matnlar
+export const INVITE_TEXT: Record<
+  'uz' | 'ru' | 'en',
+  { heading: string; wishes: string; congrats: string }
+> = {
+  uz: {
+    heading: 'Taklifnoma',
+    wishes:
+      "Nafis taklifnomangiz tayyor. Ushbu havolani mehmonlaringizga yuboring — ular bir bosishda sana, manzil va barcha ma'lumotlarni ko'radi.",
+    congrats: "Baxtli bo'linglar!",
+  },
+  ru: {
+    heading: 'Приглашение',
+    wishes:
+      'Ваше изысканное приглашение готово. Отправьте эту ссылку гостям — они увидят дату, адрес и все детали в один клик.',
+    congrats: 'Поздравляем!',
+  },
+  en: {
+    heading: 'Invitation',
+    wishes:
+      "Your elegant invitation is ready. Send this link to your guests — they'll see the date, venue and all details in one tap.",
+    congrats: 'Congratulations!',
+  },
+};
+
 // Telegram location (lat/lon) -> universal xarita havolasi (Google Maps)
 export function locationToMapLink(lat: number, lon: number): string {
   return `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;

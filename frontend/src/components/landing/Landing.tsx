@@ -15,11 +15,11 @@ const BOT = 'https://t.me/ceremony_invit_bot';
 
 const fmt = (n: number) => n.toLocaleString('ru-RU');
 
-const SPARKS = Array.from({ length: 16 }, (_, i) => ({
-  top: (i * 41 + 6) % 96,
+const SPARKS = Array.from({ length: 30 }, (_, i) => ({
+  top: (i * 37 + 6) % 96,
   left: (i * 53 + 9) % 98,
   size: 2 + (i % 3),
-  delay: (i % 5) * 0.5,
+  delay: (i % 7) * 0.45,
   key: i,
 }));
 
@@ -149,25 +149,27 @@ export default function Landing() {
         <section className="l-section">
           <div className="l-eyebrow">Mijozlar</div>
           <h2 className="l-title">Biz tayyorlagan taklifnomalar</h2>
-          <p className="l-lead">Har bir kartaga bosing — haqiqiy taklifnoma qanday ko'rinishini jonli sinab ko'ring.</p>
-          <div className="l-cards">
-            {DEMO_LIST.map((d) => {
-              const p = parseWeddingDate(d.date);
-              return (
-                <a className="l-card" key={d.slug} href={`/preview/${d.templateId}/${d.slug}`}>
-                  <div className="ph" style={{ backgroundImage: `url(${d.cover})` }} />
-                  <div className="veil" />
-                  <span className="badge">{d.templateId}</span>
-                  <div className="info">
-                    <div className="names l-script">
-                      {d.husband} <span className="amp">&</span> {d.wife}
+          <p className="l-lead">Kartaga bosing (yoki ustiga oling — to'xtaydi) — haqiqiy taklifnoma qanday ko'rinishini jonli sinab ko'ring.</p>
+          <div className="l-marquee">
+            <div className="l-marquee-track">
+              {[...DEMO_LIST, ...DEMO_LIST].map((d, i) => {
+                const p = parseWeddingDate(d.date);
+                return (
+                  <a className="l-card" key={`${d.slug}-${i}`} href={`/preview/${d.templateId}/${d.slug}`}>
+                    <div className="ph" style={{ backgroundImage: `url(${d.cover})` }} />
+                    <div className="veil" />
+                    <span className="badge">{d.templateId}</span>
+                    <div className="info">
+                      <div className="names l-script">
+                        {d.husband} <span className="amp">&</span> {d.wife}
+                      </div>
+                      <div className="meta">{p.monthName ? `${p.monthName} ${p.year}` : d.date} · {d.city}</div>
+                      <span className="open">Ochish →</span>
                     </div>
-                    <div className="meta">{p.monthName ? `${p.monthName} ${p.year}` : d.date} · {d.city}</div>
-                    <span className="open">Ochish →</span>
-                  </div>
-                </a>
-              );
-            })}
+                  </a>
+                );
+              })}
+            </div>
           </div>
         </section>
       </div>

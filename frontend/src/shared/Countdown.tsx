@@ -40,19 +40,22 @@ const Countdown: React.FC<Props> = ({ target, accent = '#c9a36b', labelColor = '
       {items.map((it, i) => (
         <div key={i} className="flex flex-col items-center">
           <div
-            className="grid place-content-center rounded-2xl text-2xl font-semibold"
+            className="grid place-content-center rounded-2xl text-2xl font-bold"
             style={{
-              width: 58,
-              height: 62,
-              color: accent,
-              background: 'rgba(255,255,255,0.7)',
-              boxShadow: '0 6px 18px rgba(0,0,0,0.08)',
-              border: `1px solid ${accent}33`,
+              width: 60,
+              height: 64,
+              color: '#3a2c14',
+              background: 'rgba(255,255,255,0.96)',
+              boxShadow: '0 8px 20px rgba(0,0,0,0.22)',
+              border: `1.5px solid ${accent}`,
             }}
           >
             {String(it.v).padStart(2, '0')}
           </div>
-          <span className="mt-1 text-[11px] tracking-widest uppercase" style={{ color: labelColor }}>
+          <span
+            className="mt-1.5 text-[11px] tracking-widest uppercase font-medium"
+            style={{ color: labelColor }}
+          >
             {it.l}
           </span>
         </div>

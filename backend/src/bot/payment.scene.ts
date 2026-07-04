@@ -10,17 +10,27 @@ import {
   TEST_CARD,
 } from '../services/payment.service';
 import { invitationLink } from '../config';
+import { detectLang, INVITE_TEXT } from '../utils/format';
 
 function fmt(n: number): string {
   return n.toLocaleString('ru-RU');
 }
 
 async function sendSuccess(ctx: MyContext, slug: string, templateId?: string) {
+  const inv = await Invitation.findOne({ slug });
+  const link = invitationLink(slug, templateId);
+  const lang = detectLang(inv?.inviteText || '');
+  const s = INVITE_TEXT[lang];
+  const names = inv ? `${inv.husband} & ${inv.wife}` : '';
+
+  // Havola TEPADA (Telegram avtomatik chiroyli preview ko'rsatadi),
+  // pastda tilga mos "Taklifnoma" sarlavhasi va iliq tilaklar.
   await ctx.reply(
-    `✅ *To'lov muvaffaqiyatli qabul qilindi!*\n\n` +
-      `Sizning taklifnomangiz tayyor va faollashtirildi:\n\n` +
-      `🔗 ${invitationLink(slug, templateId)}\n\n` +
-      `Ushbu havolani mehmonlaringizga yuboring. Tabriklaymiz! 🎉`,
+    `${link}\n\n` +
+      `💌  *${s.heading}*\n` +
+      (names ? `_${names}_\n\n` : '\n') +
+      `${s.wishes}\n\n` +
+      `🎉 ${s.congrats}`,
     { parse_mode: 'Markdown', ...Markup.removeKeyboard() }
   );
 }

@@ -40,18 +40,21 @@
     }
 
     .pr-pretitle {
-      letter-spacing: 8px;
+      letter-spacing: 6px;
       text-transform: uppercase;
-      font-size: 11px;
-      color: #c9a36b;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #f0dcb0;
+      text-shadow: 0 1px 10px rgba(0, 0, 0, 0.7);
       opacity: 0;
       animation: prFade 1.2s ease-out 0.4s forwards;
     }
 
     .pr-names {
       font-family: 'Great Vibes', cursive;
-      font-size: 64px;
-      line-height: 1.02;
+      font-size: 62px;
+      line-height: 1.18;
+      padding: 0.08em 0.04em;
       background: linear-gradient(120deg, #e7cfa6 0%, #fff6e2 45%, #c9a36b 60%, #f3e2bf 100%);
       background-size: 200% auto;
       -webkit-background-clip: text;
