@@ -16,6 +16,13 @@ export default async function handler(req: any, res: any) {
   } catch (e: any) {
     console.error('Invitation API xatosi:', e);
     // VAQTINCHA diagnostika — sabab aniqlangach olib tashlanadi
-    return res.status(500).json({ message: 'Serverda ichki xatolik', error: String(e?.message || e).slice(0, 300) });
+    const uri = process.env.MONGO_URI || '';
+    return res.status(500).json({
+      message: 'Serverda ichki xatolik',
+      error: String(e?.message || e).slice(0, 200),
+      hasMongoEnv: !!process.env.MONGO_URI,
+      mongoHost: uri.replace(/\/\/[^@]*@/, '//***@').split('?')[0].slice(0, 90),
+      hasBotEnv: !!process.env.BOT_TOKEN,
+    });
   }
 }
