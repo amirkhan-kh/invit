@@ -7,8 +7,9 @@ export const config = { runtime: 'edge' };
 
 const FONT_SCRIPT =
   'https://raw.githubusercontent.com/google/fonts/main/ofl/greatvibes/GreatVibes-Regular.ttf';
+// Cardo — statik (variable emas) nafis serif, Satori uchun ishonchli
 const FONT_SERIF =
-  'https://raw.githubusercontent.com/google/fonts/main/ofl/cormorantgaramond/CormorantGaramond-SemiBold.ttf';
+  'https://raw.githubusercontent.com/google/fonts/main/ofl/cardo/Cardo-Regular.ttf';
 
 // Satori element yasovchi yordamchi: { type, props: { ...props, children } }
 function el(type, props, children) {
@@ -19,22 +20,6 @@ function el(type, props, children) {
 
 export default async function handler(req) {
   const { searchParams } = new URL(req.url);
-
-  // --- VAQTINCHA DIAGNOSTIKA ---
-  if (searchParams.get('debug') === 'text') {
-    return new Response('EDGE-OK ImageResponse=' + typeof ImageResponse, {
-      headers: { 'content-type': 'text/plain' },
-    });
-  }
-  if (searchParams.get('debug') === 'min') {
-    const f = await fetch(FONT_SERIF).then((r) => r.arrayBuffer());
-    return new ImageResponse(
-      { type: 'div', props: { style: { width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0e1512', color: '#e7cfa6', fontSize: 60, fontFamily: 'Serif' }, children: 'MINIMAL TEST' } },
-      { width: 1200, height: 630, fonts: [{ name: 'Serif', data: f, style: 'normal', weight: 600 }] }
-    );
-  }
-  // --- /diagnostika ---
-
   const h = (searchParams.get('h') || 'Kuyov').slice(0, 24);
   const w = (searchParams.get('w') || 'Kelin').slice(0, 24);
   const d = (searchParams.get('d') || '').slice(0, 12);
@@ -93,7 +78,7 @@ export default async function handler(req) {
     height: 630,
     fonts: [
       { name: 'Script', data: script, style: 'normal', weight: 400 },
-      { name: 'Serif', data: serif, style: 'normal', weight: 600 },
+      { name: 'Serif', data: serif, style: 'normal', weight: 400 },
     ],
     headers: { 'Cache-Control': 'public, max-age=86400, s-maxage=604800' },
   });
