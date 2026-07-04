@@ -34,6 +34,14 @@ function setTitle(html: string, title: string): string {
 const GENERIC_IMG =
   'https://images.unsplash.com/photo-1519741497674-611481863552?w=1200&h=630&fit=crop&q=80';
 
+const UZ_WD = ['Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba'];
+function weekdayOf(dateStr: string): string {
+  const m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(dateStr || '');
+  if (!m) return '';
+  const dt = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+  return UZ_WD[dt.getDay()] || '';
+}
+
 export default async function handler(req: any, res: any) {
   const slug = String(req.query.slug || '');
   const template = String(req.query.template || 'premium');
@@ -42,15 +50,16 @@ export default async function handler(req: any, res: any) {
   const origin = `${proto}://${host}`;
 
   // OG ma'lumot: avval demo, keyin DB (haqiqiy taklifnoma)
-  let data: { husband: string; wife: string; image: string } | null = OG_DEMOS[slug] || null;
+  let data: { husband: string; wife: string; image: string; date: string } | null =
+    OG_DEMOS[slug] || null;
   if (!data) {
     try {
       await connectDB();
       const r = await lookupInvitation(slug);
       if (r.status === 200) {
-        data = { husband: r.data.husband, wife: r.data.wife, image: r.data.photos?.[0] || '' };
+        data = { husband: r.data.husband, wife: r.data.wife, image: r.data.photos?.[0] || '', date: r.data.date || '' };
       } else if (r.status === 402) {
-        data = { husband: (r as any).husband, wife: (r as any).wife, image: '' };
+        data = { husband: (r as any).husband, wife: (r as any).wife, image: '', date: '' };
       }
     } catch (e) {
       // e'tiborsiz -> generic OG
@@ -67,7 +76,13 @@ export default async function handler(req: any, res: any) {
   }
 
   const title = data ? `${data.husband} & ${data.wife} — Taklifnoma` : "💍 To'y taklifnomasi — baxt.uz";
-  const image = data && data.image ? data.image.trim() : GENERIC_IMG;
+  // og:image — taklifnoma ko'rinishida (rasm + yozuvlar) dinamik yasaladi
+  const rawImg = data && data.image ? data.image.trim() : GENERIC_IMG;
+  const wd = weekdayOf(data?.date || '');
+  const image = data
+    ? `${origin}/api/og-image?` +
+      new URLSearchParams({ h: data.husband, w: data.wife, d: data.date || '', wd, img: rawImg }).toString()
+    : GENERIC_IMG;
   const desc = data
     ? `${data.husband} va ${data.wife}ning to'y taklifnomasiga taklif qilinasiz. Ochish uchun bosing 💍`
     : "Nafis onlayn to'y taklifnomasi — animatsiya, musiqa va xarita bilan.";
@@ -79,6 +94,8 @@ export default async function handler(req: any, res: any) {
   html = setMeta(html, 'og:title', title);
   html = setMeta(html, 'og:description', desc);
   html = setMeta(html, 'og:image', image);
+  html = setMeta(html, 'og:image:width', '1200');
+  html = setMeta(html, 'og:image:height', '630');
   html = setMeta(html, 'og:url', url);
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');

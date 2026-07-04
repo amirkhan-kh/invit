@@ -3,7 +3,7 @@ import cors from 'cors';
 import paymentRouter from './routes/payment';
 import { getBot } from './bot/bot';
 import { lookupInvitation } from './services/invitation.service';
-import { streamTelegramPhoto } from './services/photo.service';
+import { streamPhoto } from './services/photo.service';
 
 const app = express();
 app.use(cors());
@@ -21,7 +21,7 @@ app.use(bot.webhookCallback('/api/bot'));
  */
 app.get('/api/photo/:fileId', async (req: Request, res: Response) => {
   try {
-    await streamTelegramPhoto(bot.telegram, String(req.params.fileId), res);
+    await streamPhoto(String(req.params.fileId), res, bot.telegram);
   } catch (e) {
     res.status(404).end();
   }

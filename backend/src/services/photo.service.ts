@@ -1,4 +1,5 @@
 import { Telegram } from 'telegraf';
+import mongoose from 'mongoose';
 import { photoUrl } from '../config';
 
 // Express res va Vercel res ikkalasiga mos minimal interfeys
@@ -7,20 +8,66 @@ interface HttpRes {
   end(chunk?: Buffer): void;
 }
 
-/**
- * Rasmni DISKKA YUKLAMAYDI — faqat Telegram file_id asosida proxy URL qaytaradi.
- * (Serverless/Vercel'da disk yo'q. Rasm keyin /api/photo/<file_id> orqali oqib beriladi.)
- */
-export async function downloadTelegramPhoto(
-  _telegram: Telegram,
-  fileId: string
-): Promise<string> {
-  return photoUrl(fileId);
+function blobs() {
+  return mongoose.connection.collection('photoblobs');
+}
+
+function mimeFromPath(p: string): string {
+  const s = p.toLowerCase();
+  return s.endsWith('.png')
+    ? 'image/png'
+    : s.endsWith('.webp')
+    ? 'image/webp'
+    : s.endsWith('.gif')
+    ? 'image/gif'
+    : 'image/jpeg';
 }
 
 /**
- * Rasmni Telegram serveridan SERVER TOMONDA olib, mijozga oqib beradi.
- * Bot tokeni URL'da ochilmaydi (mijoz faqat /api/photo/<file_id> ni ko'radi).
+ * Rasmni Telegram'dan bir marta yuklab, MongoDB'ga saqlaydi (tez xizmat uchun).
+ * Qaytaradi: /api/photo/<id> proxy manzili. Diskка yozmaydi (serverless mos).
+ */
+export async function downloadTelegramPhoto(
+  telegram: Telegram,
+  fileId: string
+): Promise<string> {
+  const link = await telegram.getFileLink(fileId);
+  const r = await fetch(link.href);
+  if (!r.ok) throw new Error("Rasmni yuklab bo'lmadi");
+  const buffer = Buffer.from(await r.arrayBuffer());
+  const type = mimeFromPath(link.pathname);
+  const id = `p${Date.now().toString(36)}${Math.random().toString(36).slice(2, 9)}`;
+  await blobs().insertOne({ _id: id as any, data: buffer, type });
+  return photoUrl(id);
+}
+
+/**
+ * Rasmni beradi: avval Mongo blobdan (tez), bo'lmasa eski file_id -> Telegram proxy.
+ */
+export async function streamPhoto(
+  idOrFileId: string,
+  res: HttpRes,
+  telegram: Telegram
+): Promise<void> {
+  const doc = await blobs().findOne({ _id: idOrFileId as any });
+  if (doc && (doc as any).data) {
+    const raw: any = (doc as any).data;
+    const buf: Buffer = Buffer.isBuffer(raw)
+      ? raw
+      : raw && raw.buffer
+      ? Buffer.from(raw.buffer)
+      : Buffer.from(raw);
+    res.setHeader('Content-Type', (doc as any).type || 'image/jpeg');
+    res.setHeader('Cache-Control', 'public, max-age=604800, s-maxage=604800');
+    res.end(buf);
+    return;
+  }
+  // Eski (file_id) taklifnomalar uchun zaxira yo'l
+  await streamTelegramPhoto(telegram, idOrFileId, res);
+}
+
+/**
+ * Zaxira: rasmni to'g'ridan-to'g'ri Telegram'dan oqib beradi (eski file_id'lar uchun).
  */
 export async function streamTelegramPhoto(
   telegram: Telegram,
@@ -31,20 +78,7 @@ export async function streamTelegramPhoto(
   const r = await fetch(link.href);
   if (!r.ok) throw new Error('Rasm topilmadi');
   const buffer = Buffer.from(await r.arrayBuffer());
-
-  // Telegram fayllarni "application/octet-stream" deb beradi — Telegram/brauzer
-  // uni rasm deb tanishi uchun kengaytmaga qarab to'g'ri MIME turini qo'yamiz.
-  const p = link.pathname.toLowerCase();
-  const type = p.endsWith('.png')
-    ? 'image/png'
-    : p.endsWith('.webp')
-    ? 'image/webp'
-    : p.endsWith('.gif')
-    ? 'image/gif'
-    : 'image/jpeg';
-
-  res.setHeader('Content-Type', type);
-  // Edge/CDN keshi — Telegram va mehmonlar uchun tez (bir marta olinsa saqlanadi)
+  res.setHeader('Content-Type', mimeFromPath(link.pathname));
   res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800');
   res.end(buffer);
 }
