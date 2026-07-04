@@ -1,0 +1,15 @@
+{
+  "comment": "Vercel api/ serverless funksiyalari uchun (root). Frontend/backend o'z tsconfig'lariga ega.",
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": false
+  },
+  "include": ["api/**/*.ts", "backend/src/**/*.ts"],
+  "exclude": ["node_modules", "**/dist", "backend/src/_test-*.ts"]
+}
