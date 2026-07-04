@@ -13,16 +13,8 @@ export default async function handler(req: any, res: any) {
       return res.status(402).json({ message: "To'lov qilinmagan", husband: r.husband, wife: r.wife });
     }
     return res.status(200).json(r.data);
-  } catch (e: any) {
+  } catch (e) {
     console.error('Invitation API xatosi:', e);
-    // VAQTINCHA diagnostika — sabab aniqlangach olib tashlanadi
-    const uri = process.env.MONGO_URI || '';
-    return res.status(500).json({
-      message: 'Serverda ichki xatolik',
-      error: String(e?.message || e).slice(0, 200),
-      hasMongoEnv: !!process.env.MONGO_URI,
-      mongoHost: uri.replace(/\/\/[^@]*@/, '//***@').split('?')[0].slice(0, 90),
-      hasBotEnv: !!process.env.BOT_TOKEN,
-    });
+    return res.status(500).json({ message: 'Serverda ichki xatolik' });
   }
 }
