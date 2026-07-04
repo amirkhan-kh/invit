@@ -1,38 +1,57 @@
-import "./_style.scss";
-import Butterflies, { Butterfliess } from "../../../shared/ui-components";
-import { HiOutlinePlay } from "react-icons/hi";
-const Intro = () => {
+import './_style.scss';
+import Butterflies, { Butterfliess, Sparkles } from '../../../../shared/ui-components';
+import { HiOutlinePlay } from 'react-icons/hi';
+import { parseWeddingDate } from '../../../../types/invitation.types';
+
+const Intro = ({ data = {} }) => {
+  const { husband = 'Kuyov', wife = 'Kelin', date = '', photos = [] } = data;
+  const parsed = parseWeddingDate(date);
+  const cover = photos && photos[0];
+
   return (
-    <section id="intro" className="min-h-screen sticky top-0 z-50">
+    <section id="intro" className="min-h-screen sticky top-0 z-10">
       <div className="introImg">
-      <div className="goldbg">
-        <div className="butterfly-move">
-
-            <Butterflies/>
-        </div>
-        <div className="move2">
-            <Butterfliess/>
-        </div>
-           
-        <div className="introTextCard">
-          <div className="grid place-content-center">
-            <img
-            className="w-12 h-22 object-cover rounded-3xl"
-            src="/images/optimized/duet2.avif" alt="" />
+        <div className="goldbg">
+          <Sparkles count={12} />
+          <div className="butterfly-move">
+            <Butterflies />
           </div>
-            <span className="text-[6px] text-center text-[#d6bda5c8] font-bold">02/04/2026</span>
-          <ul className="leading-5">
-            <li>Farhod</li>
-            <li className="vs">&</li>
-            <li>Shirin</li>
-          </ul>
-          <div className="grid place-content-center">
+          <div className="move2">
+            <Butterfliess />
+          </div>
 
-          <HiOutlinePlay color="#8B7E74" size={14}/>
+          <div className="introTextCard">
+            <div className="grid place-content-center">
+              {cover ? (
+                <img
+                  className="w-24 h-32 object-cover rounded-3xl shadow-lg"
+                  src={cover}
+                  alt=""
+                />
+              ) : (
+                <div className="w-24 h-32 rounded-3xl grid place-content-center ringframe">
+                  <span className="font-script text-3xl text-[#c9a36b]">
+                    {husband?.[0]}
+                    {wife?.[0]}
+                  </span>
+                </div>
+              )}
+            </div>
+            <span className="dateChip">{date || '—'}</span>
+            <ul className="leading-5">
+              <li>{husband}</li>
+              <li className="vs">&</li>
+              <li>{wife}</li>
+            </ul>
+            {parsed.weekday && (
+              <span className="weekday">{parsed.weekday}</span>
+            )}
+            <div className="grid place-content-center scrollHint">
+              <HiOutlinePlay color="#8B7E74" size={16} />
+            </div>
           </div>
         </div>
       </div>
-        </div>
     </section>
   );
 };

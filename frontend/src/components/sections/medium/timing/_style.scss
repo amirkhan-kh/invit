@@ -1,109 +1,119 @@
 #timing {
+  position: relative;
+  background: linear-gradient(200deg, #547792 0%, #3f5c74 100%);
+  padding: 14px;
+
+  .diagonal-wrapper {
     position: relative;
-    background: #547792;
-    padding: 14px;
-    .diagonal-wrapper {
-        position: relative;
-        width: 100%;
-        height: 50vh;
-        overflow: hidden;
-        color: white;
-        // background: #000;
-        font-family: "Montserrat", sans-serif;
-        .diagonal-line {
-            position: absolute;
-            top: 0%;
-            left: 100%;
-            width: 2px;
-            height: 150vh;
-            background: linear-gradient(to bottom, transparent, white, transparent);
-            transform: rotate(45deg) scaleY(0);
-            transform-origin: top;
-            transition: transform 2s linear;
-            z-index: 10;
-        }
+    width: 100%;
+    height: 50vh;
+    overflow: hidden;
+    color: white;
+    font-family: 'Cormorant Garamond', serif;
 
-        .textTiming {
-            position: absolute;
-            top: 0%;
-            right: 50%;
-            font-size: 28px;
-            letter-spacing: 0.15em;
-            opacity: 0;
-            transform: translateX(50px);
-            transition: all 0.8s ease-out;
-
-            p {
-                display: flex;
-                flex-direction: column;
-                align-items: flex-end;
-                font-family: "Sans", serif;
-                font-size: 12px;
-                font-weight: 400;
-                span {
-                    font-family: "MonteCarlo", cursive;
-                    font-size: 20px;
-                    font-weight: 600;
-                }
-            }
-
-            &.animateText {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
+    .diagonal-line {
+      position: absolute;
+      top: 0;
+      left: 100%;
+      width: 2px;
+      height: 150vh;
+      background: linear-gradient(to bottom, transparent, white, transparent);
+      transform: rotate(45deg) scaleY(0);
+      transform-origin: top;
+      transition: transform 2s linear;
+      z-index: 10;
     }
 
-    .wishTiming {
-        opacity: 0;
-        transform: translateY(30px); 
-        transition: all 0.8s ease-out;
+    .textTiming {
+      position: absolute;
+      top: 0;
+      right: 50%;
+      letter-spacing: 0.15em;
+      opacity: 0;
+      transform: translateX(50px);
+      transition: all 0.8s ease-out;
 
-        &.animateWish {
-            opacity: 1;
-            transform: translateY(0); 
+      p {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 13px;
+        font-weight: 400;
+        margin-bottom: 10px;
+        span {
+          font-family: 'MonteCarlo', cursive;
+          font-size: 22px;
+          font-weight: 600;
         }
-        p {
-            font-family: "MonteCarlo", cursive;
-            font-size: 38px;
-            font-weight: 600;
-            text-align: center;
-            color: #fff;
-        }
-        .pImg {
-            background-image: url("/public//images/optimized/cornerdec-removebg-preview.avif");
-            background-repeat: no-repeat;
-            background-position: center;
-            background-size: contain;
-            height: 50vh;
-            transform: rotate(90deg);
-            p {
-                transform: rotate(-90deg);
-                font-family: "Sans", serif;
-                font-size: 12px;
-                font-weight: 200;
-                text-align: center;
-                color: #fff;
-            }
-        }
-    }
-    .endSec {
-        opacity: 0;
-        transform: translateY(40px);
-        transition:
-            opacity 1.2s ease-out,
-            transform 1.2s ease-out;
+      }
 
-        &.animate {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        p{
-           font-family: "Poppins", sans-serif;
-            font-size: 18px;
-            font-weight: 200;
-            text-align: center;
-            color: #fff;
-        }
+      &.animateText {
+        opacity: 1;
+        transform: translateX(0);
+      }
     }
+  }
+
+  .wishTiming {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.8s ease-out;
+
+    &.animateWish {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    > p {
+      font-family: 'MonteCarlo', cursive;
+      font-size: 40px;
+      font-weight: 600;
+      text-align: center;
+      color: #fff;
+    }
+
+    .pImg {
+      p {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 15px;
+        line-height: 1.7;
+        font-weight: 300;
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        color: #fff;
+      }
+    }
+  }
+
+  .endSec {
+    padding: 30px 20px 60px;
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 1.2s ease-out, transform 1.2s ease-out;
+
+    &.animate {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    p {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 20px;
+      letter-spacing: 2px;
+      font-weight: 400;
+      text-align: center;
+      color: #fff;
+    }
+
+    .endDeco {
+      width: 100%;
+      height: 128px;
+      border-radius: 999px;
+      background:
+        radial-gradient(circle at 30% 40%, rgba(255, 255, 255, 0.25) 0%, transparent 50%),
+        linear-gradient(135deg, #c9a36b 0%, #e7cfa6 100%);
+    }
+  }
 }

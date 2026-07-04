@@ -1,29 +1,65 @@
 .introWish {
-    background: #ffffff;
-    background: radial-gradient(
-        circle,
-        rgb(255, 255, 255) 0%,
-        rgb(255, 255, 255) 36%,
-        #dadada 100%,
-        rgba(255, 255, 255, 1) 85%,
-        rgb(255, 255, 255) 100%
-    );
-    .gifram {
-        background-image: url("/public/media/Untitled.gif");
-        width: 100%;
-        background-position: center;
-        height: 100vh;
-        background-repeat: no-repeat;
-        color: #8B7E74;
-        span {
-            font-family: "MonteCarlo", cursive;
-            font-size: 20px;
-            font-weight: 600;
-        }
-        p {
-            font-family: "Sans", serif;
-            font-size: 12px;
-            font-weight: 400;
-        }
+  position: relative;
+  background: radial-gradient(circle, #ffffff 0%, #ffffff 36%, #efe6da 100%);
+
+  .gifram {
+    position: relative;
+    width: 100%;
+    min-height: 100vh;
+    display: grid;
+    place-content: center;
+    color: #8b7e74;
+    overflow: hidden;
+    /* Bezakli fon (yo'q gif o'rniga) */
+    background:
+      radial-gradient(circle at 20% 15%, rgba(201, 163, 107, 0.18) 0%, transparent 30%),
+      radial-gradient(circle at 85% 85%, rgba(201, 163, 107, 0.18) 0%, transparent 30%);
+
+    .wishInner {
+      width: 300px;
+      padding: 20px;
     }
+
+    .hello {
+      display: block;
+      font-family: 'MonteCarlo', cursive;
+      font-size: 30px;
+      color: #b8905a;
+      margin-bottom: 18px;
+    }
+
+    .body {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 15px;
+      line-height: 1.7;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      color: #7a6f64;
+      padding: 0 6px;
+    }
+
+    hr {
+      width: 60px;
+      margin: 22px auto;
+      border: none;
+      border-top: 1px solid #c9a36b;
+    }
+
+    .signoff {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      p {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 12px;
+        letter-spacing: 3px;
+      }
+      .names {
+        font-family: 'Great Vibes', cursive;
+        font-size: 24px;
+        color: #b8905a;
+      }
+    }
+  }
 }

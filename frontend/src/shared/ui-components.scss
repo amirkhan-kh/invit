@@ -1,0 +1,115 @@
+/* Kapalak (butterfly) animatsiyalari — AVIF rasm o'rniga sof SVG + CSS */
+
+.bf-wrap {
+  position: absolute;
+  pointer-events: none;
+  z-index: 30;
+  will-change: transform;
+}
+
+.bf-svg {
+  transform-origin: center;
+  animation: bf-flutter 0.35s ease-in-out infinite alternate;
+}
+
+.bf-wing {
+  transform-origin: center;
+  transform-box: fill-box;
+}
+.bf-wing.left {
+  animation: bf-wing-l 0.28s ease-in-out infinite alternate;
+}
+.bf-wing.right {
+  animation: bf-wing-r 0.28s ease-in-out infinite alternate;
+}
+
+@keyframes bf-flutter {
+  from {
+    transform: translateY(0) rotate(-4deg);
+  }
+  to {
+    transform: translateY(-6px) rotate(4deg);
+  }
+}
+@keyframes bf-wing-l {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(55deg);
+  }
+}
+@keyframes bf-wing-r {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(-55deg);
+  }
+}
+
+/* Kapalakning ekran bo'ylab uchishi */
+.bf-fly-1 {
+  animation: bf-path-1 14s linear infinite;
+}
+.bf-fly-2 {
+  animation: bf-path-2 18s linear infinite;
+}
+
+@keyframes bf-path-1 {
+  0% {
+    transform: translate(-40px, 60vh) rotate(10deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate(50vw, 20vh) rotate(-15deg);
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(110vw, 40vh) rotate(10deg);
+    opacity: 0;
+  }
+}
+@keyframes bf-path-2 {
+  0% {
+    transform: translate(110vw, 70vh) rotate(-10deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  55% {
+    transform: translate(40vw, 30vh) rotate(20deg);
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-60px, 50vh) rotate(-10deg);
+    opacity: 0;
+  }
+}
+
+/* Yaltiroq zarrachalar (sparkles) */
+.sparkle {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0%, rgba(255, 215, 150, 0.9) 40%, transparent 70%);
+  animation: sparkle-twinkle 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes sparkle-twinkle {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scale(0.6);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}

@@ -1,216 +1,51 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Date, Intro, IntroWish, Timing } from "../sections/medium";
-import { TemplateProps } from '../../types/invitation.types';
+import React from 'react';
+import { Date as DateSection, Intro, IntroWish, Timing } from '../sections/medium';
+import type { TemplateProps } from '../../types/invitation.types';
+import { useBackgroundMusic } from '../../shared/useBackgroundMusic';
+import MusicToggle from '../../shared/MusicToggle';
+import PhotoGallery from '../../shared/PhotoGallery';
 
-// Browserning AudioContext va webkitAudioContext turlari uchun kengaytma
-declare global {
-  interface Window {
-    webkitAudioContext: typeof AudioContext;
-  }
-}
+// Fon musiqasi manzili — o'z trekingizni public/audio/ ga tashlab, shu yo'lni yozing
+const MUSIC_SRC = '/audio/wedding-medium.mp3';
 
 const MediumTemplate: React.FC<TemplateProps> = ({ data }) => {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [userInteracted, setUserInteracted] = useState<boolean>(false);
-  const [isAudioReady, setIsAudioReady] = useState<boolean>(false);
-  const scrollCountRef = useRef<number>(0);
-  const audioAttemptedRef = useRef<boolean>(false);
-  const audioContextRef = useRef<AudioContext | null>(null);
-
-  // Audio yuklanishini nazorat qilish
-  useEffect(() => {
-    const audio = audioRef.current;
-    
-    const handleLoadedData = (): void => {
-      setIsAudioReady(true);
-      if (audio) {
-        audio.muted = true;
-        audio.volume = 0;
-      }
-    };
-
-    if (audio) {
-      audio.addEventListener('loadeddata', handleLoadedData);
-      audio.load();
-    }
-
-    return () => {
-      if (audio) {
-        audio.removeEventListener('loadeddata', handleLoadedData);
-      }
-    };
-  }, []);
-
-  // Birinchi interaksiyani aniqlash
-  useEffect(() => {
-    const handleFirstInteraction = (): void => {
-      setUserInteracted(true);
-      
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (!audioContextRef.current && AudioContextClass) {
-        try {
-          audioContextRef.current = new AudioContextClass();
-          
-          if (audioRef.current && audioContextRef.current) {
-            const source = audioContextRef.current.createMediaElementSource(audioRef.current);
-            source.connect(audioContextRef.current.destination);
-          }
-        } catch (error) {
-          console.error("AudioContext failed:", error);
-        }
-      }
-      removeInteractionListeners();
-    };
-
-    const removeInteractionListeners = (): void => {
-      window.removeEventListener('click', handleFirstInteraction);
-      window.removeEventListener('touchstart', handleFirstInteraction);
-      window.removeEventListener('keydown', handleFirstInteraction);
-    };
-
-    if (isAudioReady && !userInteracted) {
-      window.addEventListener('click', handleFirstInteraction, { once: true });
-      window.addEventListener('touchstart', handleFirstInteraction, { once: true });
-      window.addEventListener('keydown', handleFirstInteraction, { once: true });
-    }
-
-    return () => removeInteractionListeners();
-  }, [isAudioReady, userInteracted]);
-
-  // Scroll orqali audioni boshlash logikasi
-  useEffect(() => {
-    if (!userInteracted || !isAudioReady || audioAttemptedRef.current) return;
-
-    let lastScrollY: number = window.scrollY;
-    let scrollTimeout: ReturnType<typeof setTimeout>;
-    let isScrolling: boolean = false;
-    let scrollStartTime: number = 0;
-
-    const handleScroll = (): void => {
-      if (audioAttemptedRef.current) return;
-
-      const currentScrollY: number = window.scrollY;
-      const scrollDelta: number = Math.abs(currentScrollY - lastScrollY);
-      
-      if (scrollDelta > 10) {
-        if (!isScrolling) {
-          isScrolling = true;
-          scrollStartTime = Date.now();
-        }
-        
-        scrollCountRef.current++;
-        lastScrollY = currentScrollY;
-        
-        clearTimeout(scrollTimeout);
-        scrollTimeout = setTimeout(() => {
-          isScrolling = false;
-        }, 300);
-
-        if (scrollCountRef.current >= 2 || 
-            (Date.now() - scrollStartTime > 1500 && scrollCountRef.current >= 1)) {
-          attemptAudioPlay();
-        }
-      }
-    };
-
-    const attemptAudioPlay = (): void => {
-      if (audioAttemptedRef.current) return;
-      audioAttemptedRef.current = true;
-
-      if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
-        audioContextRef.current.resume().then(() => {
-          playAudioElement();
-        }).catch(() => {
-          playAudioElement();
-        });
-      } else {
-        playAudioElement();
-      }
-      window.removeEventListener('scroll', handleScroll);
-    };
-
-    const playAudioElement = (): void => {
-      const audio = audioRef.current;
-      if (!audio || !audio.paused === false) return;
-      
-      audio.muted = false;
-      audio.volume = 0.3;
-      
-      const playPromise = audio.play();
-      
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            let volume: number = 0.3;
-            const fadeInterval = setInterval(() => {
-              if (volume < 0.7) {
-                volume += 0.05;
-                audio.volume = Math.min(volume, 0.7);
-              } else {
-                clearInterval(fadeInterval);
-              }
-            }, 100);
-          })
-          .catch(() => {
-            audio.muted = true;
-            audio.play()
-              .then(() => {
-                setTimeout(() => { audio.muted = false; }, 1000);
-              })
-              .catch(() => {
-                console.log("Audio play failed. User interaction required.");
-              });
-          });
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      clearTimeout(scrollTimeout);
-    };
-  }, [userInteracted, isAudioReady]);
-
-  // Tozalash (Cleanup)
-  useEffect(() => {
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
-    };
-  }, []);
+  const { audioRef, isPlaying, toggle } = useBackgroundMusic(MUSIC_SRC);
 
   return (
-    <main className="container mx-auto">
+    <main className="relative">
       <audio
         ref={audioRef}
-        src="/audio/Romantic_Piano_Free_Music_UNTIL_WE_MEET_AGAIN_by_Arthur.mp3"
+        src={MUSIC_SRC}
         preload="auto"
         loop
         playsInline
         crossOrigin="anonymous"
         style={{ display: 'none' }}
       />
-      
-      {/* Har bir seksiyaga API'dan kelgan datani uzatamiz */}
-      <Intro  />
-      <IntroWish  />
-      <Date  />
-      <Timing  />
-      
-      {/* Agar footer tilagi bo'lsa ko'rsatamiz */}
-      {data.footerWish && (
-        <footer className="text-center py-10">
-          <p>{data.footerWish}</p>
-        </footer>
+
+      <MusicToggle isPlaying={isPlaying} onToggle={toggle} accent="#c9a36b" />
+
+      <Intro data={data} />
+      <IntroWish data={data} />
+
+      {/* Qo'shimcha rasmlar bo'lsa — galereya ochiladi, bo'lmasa hech narsa chizilmaydi */}
+      {data.photos && data.photos.length > 0 && (
+        <section className="bg-[#faf6ef] py-4">
+          <PhotoGallery photos={data.photos} accent="#c9a36b" />
+        </section>
       )}
+
+      <DateSection data={data} />
+      <Timing data={data} />
+
+      <footer className="bg-[#3f5c74] text-center py-8 text-white/90">
+        <p className="font-script text-3xl text-[#e7cfa6]">
+          {data.husband} & {data.wife}
+        </p>
+        <p className="text-xs tracking-[3px] mt-1">{data.date}</p>
+      </footer>
     </main>
   );
-}
+};
 
 export default MediumTemplate;

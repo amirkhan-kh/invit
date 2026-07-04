@@ -1,88 +1,118 @@
 #intro {
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(circle, #ffffff 0%, #ffffff 36%, #efe6da 100%);
+
+  .introImg {
     position: relative;
-    overflow: hidden;
-    background: #ffffff;
-    background: radial-gradient(circle, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 36%, #dadada 100%, rgba(255, 255, 255, 1) 85%, rgb(255, 255, 255) 100%);    
-    .introImg {
-        background-image: url("/public/images/optimized/flowersbg-removebg-preview.avif");
-        width: 100%;
-        background-position: center;
-        height: 100vh;
-        background-size: cover;
-        background-repeat: no-repeat;
-        transform: scale(1.6);
-        animation: zoomOut 1.5s ease-out forwards;
-        .introTextCard {
-            display: grid;
-            place-content: center;
-            height: 100%;
-            transform: scale(0.6);
-            opacity: 0;
-            font-family: "Meow Script", cursive;
-            animation: zoomText 1.5s ease-out forwards;
-            ul {
-                list-style: none;
-                padding: 0;
-                margin: 0;
-                display: flex; 
-                flex-direction: column; 
-                align-items: center; 
-                color: #8B7E74;
-                font-weight: 400;
-                letter-spacing: 0.9px;
-                font-size: 18px;
-                .vs{
-                    margin: 0;
-                   
-                }
-            }
-        }
-        .goldbg {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            background:
-                linear-gradient(to bottom, #ffffffc8 0%, transparent 30%),
-                linear-gradient(to top, #d6bda5c8 0%, transparent 0%);
-            background-repeat: no-repeat;
-            backdrop-filter: 5px;
-            background-size: 100% 100%;
-            background-position: top, bottom;
-            animation: zoomShadow 1.5s ease-out forwards;
+    width: 100%;
+    height: 100vh;
+    /* AVIF rasm o'rniga bezakli gradient fon */
+    background:
+      radial-gradient(ellipse at top, rgba(214, 189, 165, 0.35) 0%, transparent 55%),
+      radial-gradient(ellipse at bottom, rgba(201, 163, 107, 0.25) 0%, transparent 55%),
+      linear-gradient(180deg, #fffdf9 0%, #f6efe4 100%);
+    transform: scale(1.15);
+    animation: zoomOut 1.6s ease-out forwards;
 
-            p{
-                text-align: center;
-                transform: translateY(140px);
-                font-size: 24px;
-                font-family: "MonteCarlo", cursive;
-                color: #8B7E74;
-            }
-        }
+    .goldbg {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+      animation: fadeIn 1.6s ease-out forwards;
     }
-    @keyframes zoomShadow {
-        to {
-            background-size: 100% 2%;
-        }
-    }
-    @keyframes zoomOut {
-        from {
-            transform: scale(1.6);
-        }
-        to {
-            transform: scale(1);
-        }
-    }
-    @keyframes zoomText {
-        from {
-            transform: scale(1);
-            opacity: 0;
 
-        }
-        to {
-            transform: scale(3);
-            opacity: 1;
+    .introTextCard {
+      display: grid;
+      place-content: center;
+      justify-items: center;
+      height: 100%;
+      gap: 10px;
+      transform: scale(0.85);
+      opacity: 0;
+      animation: zoomText 1.6s ease-out forwards;
 
+      .ringframe {
+        border: 1.5px solid #c9a36b;
+        background: linear-gradient(135deg, #fff 0%, #f3e8d6 100%);
+      }
+
+      .dateChip {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 12px;
+        letter-spacing: 3px;
+        color: #b8905a;
+        font-weight: 600;
+      }
+
+      ul {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        color: #8b7e74;
+        font-family: 'Great Vibes', cursive;
+        letter-spacing: 0.5px;
+        line-height: 1.1;
+
+        li {
+          font-size: 40px;
         }
+        .vs {
+          font-size: 26px;
+          color: #c9a36b;
+          margin: 2px 0;
+        }
+      }
+
+      .weekday {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 13px;
+        letter-spacing: 4px;
+        text-transform: uppercase;
+        color: #a08a72;
+      }
+
+      .scrollHint {
+        margin-top: 6px;
+        animation: bounce 1.8s ease-in-out infinite;
+      }
     }
-    
+  }
+
+  @keyframes zoomOut {
+    from {
+      transform: scale(1.15);
+    }
+    to {
+      transform: scale(1);
+    }
+  }
+  @keyframes fadeIn {
+    from {
+      opacity: 0.4;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes zoomText {
+    from {
+      transform: scale(0.85);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  @keyframes bounce {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(6px);
+    }
+  }
 }

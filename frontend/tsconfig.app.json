@@ -15,11 +15,15 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
+    /* .jsx seksiyalar import qilinishi uchun (bodylari tekshirilmaydi) */
+    "allowJs": true,
+    "checkJs": false,
+
     /* Linting */
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["frontend/src"]
+  "include": ["src"]
 }

@@ -1,71 +1,107 @@
 #secDate {
-    #date {
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 10px 0px;
-        p {
-            font-family: "MonteCarlo", cursive;
-            font-size: 14px;
-            font-weight: 200;
-            span {
-                font-family: "Sans", serif;
-                font-size: 26px;
-                font-weight: 500;
-            }
-        }
-        .calendar {
-            font-family: "Cinzel", serif;
-            color: #ffffff;
-        }
+  position: relative;
+  background: linear-gradient(160deg, #557693 0%, #3f5c74 100%);
+  overflow: hidden;
 
-        .weekdays {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            text-align: center;
-            font-size: 12px;
-            letter-spacing: 0.1em;
-            margin-bottom: 1px;
-            .dayName {
-                font-family: "MonteCarlo", cursive;
-                padding: 0px 17px;
-                font-weight: 600;
-            }
-        }
+  /* Yumshoq nurli bezaklar (flyflowers.avif o'rniga) */
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  &::before {
+    top: -60px;
+    left: -80px;
+  }
+  &::after {
+    bottom: 40px;
+    right: -70px;
+  }
 
-        .days {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 14px;
-            text-align: center;
+  #date {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 0;
 
-            span {
-                font-size: 14px;
-                line-height: 32px;
-                width: 32px;
-                height: 32px;
-                margin: auto;
-                cursor: default;
-            }
-
-            .selected {
-                border: 1px solid #000;
-                border-radius: 50%;
-                font-weight: 500;
-            }
-        }
+    p {
+      font-family: 'MonteCarlo', cursive;
+      font-size: 14px;
+      font-weight: 200;
+      span {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 30px;
+        font-weight: 500;
+      }
     }
-    .adressImgg {
-        opacity: 0;
-        transform: translateY(40px);
-        transition:
-            opacity 1.2s ease-out,
-            transform 1.2s ease-out;
 
-        &.animate {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    .calendar {
+      font-family: 'Cormorant Garamond', serif;
+      color: #ffffff;
+      padding: 0 12px;
     }
+
+    .weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      text-align: center;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+      .dayName {
+        font-weight: 600;
+        opacity: 0.85;
+      }
+    }
+
+    .days {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      text-align: center;
+
+      span {
+        font-size: 14px;
+        line-height: 30px;
+        width: 30px;
+        height: 30px;
+        margin: auto;
+        border-radius: 50%;
+      }
+
+      .selected {
+        background: #fff;
+        color: #557693;
+        font-weight: 700;
+        box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.25);
+        animation: pulseDay 2s ease-in-out infinite;
+      }
+    }
+  }
+
+  @keyframes pulseDay {
+    0%, 100% {
+      box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.25);
+    }
+    50% {
+      box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.1);
+    }
+  }
+
+  .adressImgg {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 1.2s ease-out, transform 1.2s ease-out;
+
+    &.animate {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
