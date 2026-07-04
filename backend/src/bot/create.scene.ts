@@ -1,5 +1,5 @@
 import { Scenes, Markup } from 'telegraf';
-import { MyContext, textOf, photoOf, locationOf } from './context';
+import { MyContext, textOf, photoOf, locationOf, venueOf } from './context';
 import {
   splitCoupleNames,
   validateDate,
@@ -101,20 +101,28 @@ export const createScene = new Scenes.WizardScene<MyContext>(
     ctx.scene.session.venueName = text.trim();
 
     await ctx.reply(
-      '📍 Endi to\'yxona manzilini xaritada belgilang.\n\n' +
-        'Telegramda 📎 (skrepka) → *Location (Joylashuv)* orqali nuqtani yuboring,\n' +
+      '📍 Endi to\'yxona joylashuvini yuboring.\n\n' +
+        'Telegramda 📎 → *Location* orqali nuqtani yuboring (yoki joyni qidirib tanlang),\n' +
         'yoki Google/Yandex Maps havolasini tashlang.',
       { parse_mode: 'Markdown' }
     );
     return ctx.wizard.next();
   },
 
-  // 4 — manzil (lokatsiya yoki havola)
+  // 4 — joylashuv (venue / lokatsiya / havola). Manzil matni so'ralmaydi —
+  // xaritada joy tanlansa manzil avtomatik olinadi, bo'lmasa faqat xarita nuqtasi.
   async (ctx) => {
+    const venue = venueOf(ctx);
     const loc = locationOf(ctx);
     const text = textOf(ctx);
 
-    if (loc) {
+    if (venue) {
+      ctx.scene.session.mapLink = locationToMapLink(venue.lat, venue.lon);
+      if (venue.address) ctx.scene.session.address = venue.address;
+      if (venue.title && !ctx.scene.session.venueName) {
+        ctx.scene.session.venueName = venue.title;
+      }
+    } else if (loc) {
       ctx.scene.session.mapLink = locationToMapLink(loc.lat, loc.lon);
     } else if (text && isValidMapLink(text)) {
       ctx.scene.session.mapLink = text.trim();
@@ -126,8 +134,7 @@ export const createScene = new Scenes.WizardScene<MyContext>(
 
     await ctx.reply(
       '✍️ Taklifnoma matnini yuboring (oila nomidan).\n' +
-        'Eng ko\'pi 6 ta gap va 400 belgigacha.',
-      { parse_mode: 'Markdown' }
+        'Eng ko\'pi 6 ta gap va 400 belgigacha.'
     );
     return ctx.wizard.next();
   },
@@ -196,7 +203,7 @@ export const createScene = new Scenes.WizardScene<MyContext>(
         wife: s.wife,
         date: s.date,
         venueName: s.venueName,
-        address: s.venueName, // qisqa manzil sifatida nom (xohlasangiz alohida so'rasa bo'ladi)
+        address: s.address || '', // faqat xaritadan (venue) kelsa to'ladi, aks holda bo'sh
         mapLink: s.mapLink,
         inviteText: s.inviteText,
         photos: s.photos || [],
@@ -211,9 +218,10 @@ export const createScene = new Scenes.WizardScene<MyContext>(
           `👰 ${inv.wife} & 🤵 ${inv.husband}\n` +
           `📅 ${inv.date}\n` +
           `🏛 ${inv.venueName}\n` +
+          (inv.address ? `📍 ${inv.address}\n` : '') +
           `🖼 Shablon: ${TEMPLATE_LABELS[templateId]}\n` +
           `🖼 Rasmlar: ${(inv.photos || []).length} ta\n\n` +
-          `🔗 Havola: \`${invitationLink(inv.slug)}\`\n` +
+          `🔗 Havola: \`${invitationLink(inv.slug, inv.templateId)}\`\n` +
           `_(havola to'lovdan so'ng faollashadi)_\n\n` +
           `💳 Narxi: *${price} so'm*`,
         {

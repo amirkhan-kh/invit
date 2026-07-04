@@ -27,10 +27,14 @@ export const config = {
   maxPhotos: 3,
 };
 
-export function invitationLink(slug: string): string {
-  return `${config.baseUrl}/${slug}`;
+export function invitationLink(slug: string, templateId?: string): string {
+  // Havola formati: baxt.uz/preview/<shablon>/<slug>  (masalan: /preview/premium/farhodshirin)
+  return templateId
+    ? `${config.baseUrl}/preview/${templateId}/${slug}`
+    : `${config.baseUrl}/${slug}`;
 }
 
-export function photoUrl(filename: string): string {
-  return `${config.apiPublicUrl}/uploads/${filename}`;
+export function photoUrl(fileId: string): string {
+  // Rasm Telegram'da qoladi; /api/photo/<file_id> orqali oqib beriladi (disk kerak emas)
+  return `${config.apiPublicUrl}/api/photo/${fileId}`;
 }

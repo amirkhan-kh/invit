@@ -15,11 +15,11 @@ function fmt(n: number): string {
   return n.toLocaleString('ru-RU');
 }
 
-async function sendSuccess(ctx: MyContext, slug: string) {
+async function sendSuccess(ctx: MyContext, slug: string, templateId?: string) {
   await ctx.reply(
     `✅ *To'lov muvaffaqiyatli qabul qilindi!*\n\n` +
       `Sizning taklifnomangiz tayyor va faollashtirildi:\n\n` +
-      `🔗 ${invitationLink(slug)}\n\n` +
+      `🔗 ${invitationLink(slug, templateId)}\n\n` +
       `Ushbu havolani mehmonlaringizga yuboring. Tabriklaymiz! 🎉`,
     { parse_mode: 'Markdown', ...Markup.removeKeyboard() }
   );
@@ -42,7 +42,7 @@ export const paymentScene = new Scenes.WizardScene<MyContext>(
       return ctx.scene.leave();
     }
     if (inv.isPaid) {
-      await sendSuccess(ctx, inv.slug);
+      await sendSuccess(ctx, inv.slug, inv.templateId);
       return ctx.scene.leave();
     }
 
@@ -77,7 +77,7 @@ export const paymentScene = new Scenes.WizardScene<MyContext>(
     // Test kartasi — real pulsiz darhol to'liq to'lash
     if (isTestCard(card)) {
       const res = await payWithTestCard(String(inv._id));
-      await sendSuccess(ctx, res.slug);
+      await sendSuccess(ctx, res.slug, res.templateId);
       return ctx.scene.leave();
     }
 
@@ -123,7 +123,7 @@ export const paymentScene = new Scenes.WizardScene<MyContext>(
       const res = await applyPayment(invId, amount);
 
       if (res.isPaid) {
-        await sendSuccess(ctx, res.slug);
+        await sendSuccess(ctx, res.slug, res.templateId);
         return ctx.scene.leave();
       }
 

@@ -1,36 +1,37 @@
-import fs from 'fs';
-import path from 'path';
 import { Telegram } from 'telegraf';
-import { config, photoUrl } from '../config';
+import { photoUrl } from '../config';
 
-// Uploads papkasi mavjudligini ta'minlash
-function ensureUploadsDir() {
-  if (!fs.existsSync(config.uploadsDir)) {
-    fs.mkdirSync(config.uploadsDir, { recursive: true });
-  }
+// Express res va Vercel res ikkalasiga mos minimal interfeys
+interface HttpRes {
+  setHeader(name: string, value: string): void;
+  end(chunk?: Buffer): void;
 }
 
 /**
- * Telegram rasm faylini yuklab olib, uploads papkasiga saqlaydi.
- * Qaytaradi: rasmning to'liq (public) URL manzili.
+ * Rasmni DISKKA YUKLAMAYDI — faqat Telegram file_id asosida proxy URL qaytaradi.
+ * (Serverless/Vercel'da disk yo'q. Rasm keyin /api/photo/<file_id> orqali oqib beriladi.)
  */
 export async function downloadTelegramPhoto(
-  telegram: Telegram,
+  _telegram: Telegram,
   fileId: string
 ): Promise<string> {
-  ensureUploadsDir();
+  return photoUrl(fileId);
+}
 
+/**
+ * Rasmni Telegram serveridan SERVER TOMONDA olib, mijozga oqib beradi.
+ * Bot tokeni URL'da ochilmaydi (mijoz faqat /api/photo/<file_id> ni ko'radi).
+ */
+export async function streamTelegramPhoto(
+  telegram: Telegram,
+  fileId: string,
+  res: HttpRes
+): Promise<void> {
   const link = await telegram.getFileLink(fileId);
-  const res = await fetch(link.href);
-  if (!res.ok) throw new Error('Rasmni yuklab bo\'lmadi');
-
-  const arrayBuffer = await res.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
-
-  const ext = path.extname(link.pathname) || '.jpg';
-  const filename = `ph_${Date.now()}_${Math.floor(Math.random() * 1e6)}${ext}`;
-  const filePath = path.join(config.uploadsDir, filename);
-
-  fs.writeFileSync(filePath, buffer);
-  return photoUrl(filename);
+  const r = await fetch(link.href);
+  if (!r.ok) throw new Error('Rasm topilmadi');
+  const buffer = Buffer.from(await r.arrayBuffer());
+  res.setHeader('Content-Type', r.headers.get('content-type') || 'image/jpeg');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.end(buffer);
 }

@@ -8,6 +8,7 @@ export interface WizardData extends Scenes.WizardSessionData {
   wife?: string;
   date?: string;
   venueName?: string;
+  address?: string;
   mapLink?: string;
   inviteText?: string;
   photos?: string[];
@@ -34,5 +35,20 @@ export function photoOf(ctx: MyContext): string | null {
 export function locationOf(ctx: MyContext): { lat: number; lon: number } | null {
   const m: any = ctx.message;
   if (m && m.location) return { lat: m.location.latitude, lon: m.location.longitude };
+  return null;
+}
+// Telegram "Venue" (joy) — foydalanuvchi xaritadan joy tanlaganda nom + manzil + koordinata keladi
+export function venueOf(
+  ctx: MyContext
+): { title?: string; address?: string; lat: number; lon: number } | null {
+  const m: any = ctx.message;
+  if (m && m.venue && m.venue.location) {
+    return {
+      title: m.venue.title,
+      address: m.venue.address,
+      lat: m.venue.location.latitude,
+      lon: m.venue.location.longitude,
+    };
+  }
   return null;
 }

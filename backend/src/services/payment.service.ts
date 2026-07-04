@@ -40,6 +40,7 @@ export interface PaymentResult {
   amountPaid: number;
   remaining: number;
   slug: string;
+  templateId: string;
   message: string;
 }
 
@@ -60,6 +61,7 @@ export async function applyPayment(invitationId: string, amount: number): Promis
       amountPaid: inv.amountPaid,
       remaining: 0,
       slug: inv.slug,
+      templateId: inv.templateId,
       message: 'allaqachon to\'langan',
     };
   }
@@ -76,6 +78,7 @@ export async function applyPayment(invitationId: string, amount: number): Promis
       amountPaid: inv.amountPaid,
       remaining: 0,
       slug: inv.slug,
+      templateId: inv.templateId,
       message: 'to\'liq to\'landi',
     };
   }
@@ -87,6 +90,7 @@ export async function applyPayment(invitationId: string, amount: number): Promis
     amountPaid: inv.amountPaid,
     remaining,
     slug: inv.slug,
+    templateId: inv.templateId,
     message: 'qisman to\'landi',
   };
 }
@@ -106,6 +110,7 @@ export async function payWithTestCard(invitationId: string): Promise<PaymentResu
     amountPaid: inv.amountPaid,
     remaining: 0,
     slug: inv.slug,
+    templateId: inv.templateId,
     message: 'test kartasi bilan to\'landi',
   };
 }
