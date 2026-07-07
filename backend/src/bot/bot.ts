@@ -21,6 +21,7 @@ const DEMO_FOR: Record<TemplateId, string> = {
   medium: 'azizmalika',
   premium: 'sardorkamila',
 };
+const SUPPORT_USERNAME_MD = '@Amirxonn\\_uz';
 
 /**
  * Botni to'liq sozlab qaytaradi (launch QILMAYDI).
@@ -74,7 +75,7 @@ export function createBot(): Telegraf<MyContext> {
         `Men — *baxt.uz* to'y taklifnomalari botiman 💍\n` +
         `Sizga *animatsiya, musiqa, xarita va countdown* bilan bezatilgan zamonaviy taklifnoma yasab beraman — bir necha daqiqada, shaxsiy havola bilan.\n\n` +
         `Quyidagi 3 uslubdan birini tanlang. Har birining *jonli namunasini* ochib ko'ring 👇\n\n` +
-        `📩 Savol yoki yordam uchun: @Amirxonn_uz`,
+        `📩 Savol yoki yordam uchun: ${SUPPORT_USERNAME_MD}`,
       { parse_mode: 'Markdown' }
     );
 
