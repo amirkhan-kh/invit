@@ -12,7 +12,10 @@
     "prod:bot": "node dist/bot-app.js",
     "prod:api": "node dist/server.js",
     "typecheck": "tsc --noEmit",
-    "test": "ts-node src/_test-flow.ts && ts-node src/_test-http.ts"
+    "test": "ts-node src/_test-flow.ts && ts-node src/_test-http.ts",
+    "webhook:set": "node scripts/telegram-webhook.js set",
+    "webhook:info": "node scripts/telegram-webhook.js info",
+    "webhook:delete": "node scripts/telegram-webhook.js delete"
   },
   "keywords": [],
   "author": "",

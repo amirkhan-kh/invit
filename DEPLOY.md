@@ -1,6 +1,6 @@
-# 🚀 Vercel'ga TEKIN deploy (frontend + bot + API)
+# 🚀 Vercel deploy (frontend + bot + API)
 
-Hammasi **bitta Vercel loyihasi**da ishlaydi — alohida server, Railway, oylik to'lov **kerak emas**.
+Hammasi **bitta Vercel loyihasi**da ishlaydi — alohida Railway polling bot service kerak emas.
 
 - **Frontend** (sayt) → Vercel statik hosting
 - **API** (`/api/invitation`, `/api/photo`) → Vercel serverless funksiyalari
@@ -40,15 +40,17 @@ git push origin main
 Atlas → **Network Access** → **Allow Access from Anywhere** (`0.0.0.0/0`).
 
 ## 4-QADAM: Telegram webhook'ni ulash (bir marta)
-Deploy tugagach, terminalda (TOKEN va DOMAIN ni almashtiring):
+Deploy tugagach, `backend/.env` ichida `BOT_TOKEN` va `BASE_URL` production qiymatlari turganini tekshiring.
+Keyin:
 ```bash
-curl "https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://<DOMAIN>/api/bot"
+cd backend
+npm run webhook:set
 ```
 Tekshirish:
 ```bash
-curl "https://api.telegram.org/bot<TOKEN>/getWebhookInfo"
+npm run webhook:info
 ```
-`"url": "https://<DOMAIN>/api/bot"` va `pending_update_count` ko'rinsa — tayyor.
+`Webhook url: https://<DOMAIN>/api/bot` va `Pending updates` ko'rinsa — tayyor.
 
 Endi Telegram'da botga `/start` yozing → to'liq oqim Vercel'da ishlaydi. Havola: `https://<DOMAIN>/preview/<shablon>/<slug>`.
 
@@ -57,10 +59,11 @@ Endi Telegram'da botga `/start` yozing → to'liq oqim Vercel'da ishlaydi. Havol
 ## ⚠️ Muhim: lokal (polling) ↔ prod (webhook)
 Bitta bot tokeni **bir vaqtda** yo polling, yo webhook bo'ladi — ikkalasi birga emas.
 
-- **Webhook o'rnatilgach**, lokal `npm run start:bot` (polling) **409 xato** beradi.
+- **Webhook o'rnatilgach**, lokal `npm run start:bot` yoki `npm run prod:bot` polling rejimi ishga tushmaydi.
 - Lokalда yana test qilish uchun webhook'ni o'chiring:
   ```bash
-  curl "https://api.telegram.org/bot<TOKEN>/deleteWebhook"
+  cd backend
+  npm run webhook:delete
   ```
 - **Tavsiya:** BotFather'da **ikkinchi bot** (dev uchun) oching — bittasi lokal polling, ikkinchisi prod webhook. `.env` da dev token, Vercel'da prod token.
 

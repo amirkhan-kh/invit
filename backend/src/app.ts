@@ -47,5 +47,6 @@ app.get('/api/invitation/:slug', async (req: Request, res: Response) => {
 
 app.get('/', (_req, res) => res.json({ ok: true, service: 'seramony-invit API' }));
 app.get('/api', (_req, res) => res.json({ ok: true, service: 'seramony-invit API' }));
+app.get('/api/health', (_req, res) => res.json({ ok: true, service: 'seramony-invit API' }));
 
 export { app };

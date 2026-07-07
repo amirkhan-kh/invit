@@ -11,7 +11,11 @@ export async function connectDB(): Promise<typeof mongoose> {
   if (cache.conn) return cache.conn;
   if (!cache.promise) {
     cache.promise = mongoose
-      .connect(config.mongoUri, { serverSelectionTimeoutMS: 8000 })
+      .connect(config.mongoUri, {
+        serverSelectionTimeoutMS: 8000,
+        maxPoolSize: 10,
+        minPoolSize: 0,
+      })
       .catch((e) => {
         // Muvaffaqiyatsiz ulanishni keshda saqlamaymiz — keyingi chaqiruvda qayta urinsin
         cache.promise = null;

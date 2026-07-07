@@ -142,40 +142,55 @@ Fon musiqasi: `frontend/public/audio/` ichiga `wedding-standard.mp3`, `wedding-m
 
 ---
 
-## 🚀 7-QADAM: Internetga chiqarish (Deploy)
+## 🚀 7-QADAM: Production deploy (doim ishlashi uchun)
 
-### Backend (bot + API) → Railway
-> Tayyor config: `backend/railway.json` (build + API start) va `backend/Procfile`
-> (`api` va `bot` process turlari).
+Production uchun **bitta asosiy yo'l** ishlatiladi: frontend, API va bot webhook hammasi
+Vercel'da. Bu rejimda terminal ochiq turishi shart emas. Telegram har bir xabarni
+`/api/bot` webhook manziliga yuboradi, Vercel esa serverless funksiyani kerak bo'lganda
+ishga tushiradi.
 
-1. https://railway.app → GitHub bilan kiring.
-2. **New Project → Deploy from GitHub** → repongizni tanlang.
-3. **Root Directory:** `backend`.
-4. **Variables** (Settings): `.env` dagi barcha qiymatlarni qo'shing
-   (`BOT_TOKEN`, `MONGO_URI`, `BASE_URL`, `API_PUBLIC_URL`, `TEST_CARD`).
-   - `API_PUBLIC_URL` = Railway bergan domen (masalan `https://xxx.up.railway.app`).
-5. Ikkita **service** kerak (bot va API alohida ishlashi uchun):
-   - API service — Start Command: `npm run prod:api` (railway.json'dagi standart).
-   - Bot service — xuddi shu repo'dan yana bitta service qo'shing, Start Command: `npm run prod:bot`.
-   - Ikkalasi ham `npm run build` (tsc → `dist/`) dan keyin ishga tushadi.
-6. ⚠️ Railway fayl tizimi **vaqtinchalik** — `uploads/` dagi rasmlar deploy'da yo'qoladi.
-   Keyinchalik Railway Volume yoki bulut saqlash (S3/Cloudinary) ulang.
+1. https://vercel.com → GitHub bilan kiring.
+2. **Add New → Project** → repo'ni tanlang.
+3. **Root Directory:** repo ildizi (`./`).
+4. `vercel.json` build'ni o'zi boshqaradi: frontend build bo'ladi, `/api/*` esa serverless API bo'lib ishlaydi.
+5. Vercel **Environment Variables** ga quyidagilarni kiriting:
 
-### Frontend → Vercel
-> Tayyor config: `frontend/vercel.json` — `/api` va `/uploads` ni backend'ga proxy qiladi,
-> qolgan barcha yo'llarni `index.html` ga yo'naltiradi (slug havolalari — `baxt.uz/<slug>` —
-> deep-link'da 404 bermasligi uchun **shart**).
+   | Kalit | Qiymat |
+   |-------|--------|
+   | `BOT_TOKEN` | BotFather bergan production bot token |
+   | `MONGO_URI` | MongoDB Atlas URI |
+   | `BASE_URL` | Production domen, masalan `https://invit-silk.vercel.app` yoki `https://baxt.uz` |
+   | `API_PUBLIC_URL` | `BASE_URL` bilan bir xil qiymat |
+   | `TEST_CARD` | `1234567812345678` |
 
-1. https://vercel.com → GitHub bilan kiring → repo → **Root Directory:** `frontend`.
-2. Build: `npm run build`, Output: `dist`.
-3. **`frontend/vercel.json` da** `YOUR-BACKEND.up.railway.app` ni o'zingizning Railway API
-   domeningizga almashtiring (2 ta joyda). Shundan keyin frontend `/api` so'rovlari backend'ga boradi.
+   `PORT` qo'shmang. Vercel serverless funksiyalar port ochmaydi.
+
+6. Deploy tugagach webhookni ulang:
+   ```bash
+   cd backend
+   npm run webhook:set
+   npm run webhook:info
+   ```
+
+7. `webhook:info` natijasida `Webhook url: https://.../api/bot` chiqsa, bot productionda ulangan.
+
+### Muhim
+
+- Productionda `npm run prod:bot` ishlatilmaydi. U polling rejimi va faqat lokal/oddiy VPS test uchun.
+- Bitta Telegram token bir vaqtda faqat bitta rejimda ishlaydi: **webhook yoki polling**.
+- Agar production Vercel webhook ishlayotgan bo'lsa, Railway/VPS'dagi bot service'ni `Start/Restart` qilish kerak emas.
+- Minglab user uchun ma'lumotlar MongoDB Atlas'da saqlanadi, bot sessiyalari ham `botsessions` kolleksiyasida turadi.
 
 ### Domen (baxt.uz)
-1. Domenni oling (masalan ahost.uz, uzinfocom).
-2. Frontend'ni Vercel'da `baxt.uz` ga ulang (Vercel → Domains).
-3. `backend/.env` da `BASE_URL=https://baxt.uz` qiling.
-4. Endi havolalar `https://baxt.uz/<slug>` ko'rinishida ishlaydi.
+
+1. Domenni Vercel → **Settings → Domains** ichida ulang.
+2. Vercel env'da `BASE_URL=https://baxt.uz` va `API_PUBLIC_URL=https://baxt.uz` qiling.
+3. Redeploy qiling.
+4. Webhookni qayta ulang:
+   ```bash
+   cd backend
+   npm run webhook:set
+   ```
 
 ---
 
