@@ -22,5 +22,6 @@ export async function lookupInvitation(slug: string): Promise<InvitationLookup> 
   if (!inv) return { status: 404 };
   if (isExpired(inv.date)) return { status: 404 };
   if (!inv.isPaid) return { status: 402, husband: inv.husband, wife: inv.wife };
+  inv.photos = (inv.photos || []).map((p) => String(p || '').trim()).filter(Boolean);
   return { status: 200, data: inv };
 }

@@ -7,6 +7,7 @@ import { createScene } from './create.scene';
 import { paymentScene } from './payment.scene';
 import { mongoSessionStore } from './session-store';
 import { TemplateId, TEMPLATE_PRICES } from '../models/invit.back';
+import { writeBotError, writeBotLog } from '../services/bot-log.service';
 
 const TEMPLATES: { id: TemplateId; label: string; desc: string }[] = [
   { id: 'standard', label: '🌿 Standart', desc: 'Sodda va nafis — yengil animatsiya, fon musiqasi, countdown va xarita.' },
@@ -32,10 +33,42 @@ export function createBot(): Telegraf<MyContext> {
   const stage = new Scenes.Stage<MyContext>([createScene, paymentScene]);
   // Sessiya MongoDB'da (serverless'da ham, polling'da ham ishlaydi)
   bot.use(session({ store: mongoSessionStore }));
-  bot.use(stage.middleware());
 
-  // /start — shablon namunalari
-  bot.start(async (ctx) => {
+  bot.use(async (ctx, next) => {
+    const startedAt = Date.now();
+    const message: any = ctx.message;
+    const callback: any = ctx.callbackQuery;
+    const text = typeof message?.text === 'string' ? message.text : undefined;
+    const callbackData = typeof callback?.data === 'string' ? callback.data : undefined;
+    const base = {
+      updateId: ctx.update.update_id,
+      updateType: ctx.updateType,
+      chatId: ctx.chat?.id,
+      userId: ctx.from?.id,
+      username: ctx.from?.username,
+      text,
+      callbackData,
+    };
+
+    await writeBotLog('info', 'update_received', base);
+    try {
+      await next();
+      await writeBotLog('info', 'update_handled', {
+        ...base,
+        durationMs: Date.now() - startedAt,
+      });
+    } catch (error) {
+      await writeBotError('update_error', error, base);
+      throw error;
+    }
+  });
+
+  function resetSession(ctx: MyContext) {
+    const current = (ctx.session || {}) as Record<string, unknown>;
+    for (const key of Object.keys(current)) delete current[key];
+  }
+
+  async function sendStartMenu(ctx: MyContext) {
     await ctx.reply(
       `✨ *Assalomu alaykum!* ✨\n\n` +
         `Men — *baxt.uz* to'y taklifnomalari botiman 💍\n` +
@@ -66,7 +99,21 @@ export function createBot(): Telegraf<MyContext> {
         await ctx.reply(caption, { parse_mode: 'Markdown', ...kb });
       }
     }
+  }
+
+  // /start va /restart har doim joriy wizard/sessionni tozalab, menyuni qayta ochadi.
+  // Bu middleware stage'dan oldin turishi kerak, aks holda command scene ichida input bo'lib qoladi.
+  bot.command(['start', 'restart'], async (ctx) => {
+    resetSession(ctx);
+    await sendStartMenu(ctx);
   });
+
+  bot.command('cancel', async (ctx) => {
+    resetSession(ctx);
+    await ctx.reply("Jarayon bekor qilindi. Qaytadan boshlash uchun /start bosing.", Markup.removeKeyboard());
+  });
+
+  bot.use(stage.middleware());
 
   // Shablon tanlandi -> ma'lumot yig'ish ssenariysiga o'tamiz
   bot.action(/^tpl_(standard|medium|premium)$/, async (ctx) => {

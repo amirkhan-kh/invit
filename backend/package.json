@@ -15,7 +15,8 @@
     "test": "ts-node src/_test-flow.ts && ts-node src/_test-http.ts",
     "webhook:set": "node scripts/telegram-webhook.js set",
     "webhook:info": "node scripts/telegram-webhook.js info",
-    "webhook:delete": "node scripts/telegram-webhook.js delete"
+    "webhook:delete": "node scripts/telegram-webhook.js delete",
+    "bot:logs": "node scripts/bot-logs.js"
   },
   "keywords": [],
   "author": "",
