@@ -72,11 +72,22 @@ export function buildOgImageUrl(inv: {
  * Mehmonlarga forward qilish uchun nafis matn (HTML).
  * Havola alohida yuboriladi yoki caption oxirida — preview uchun.
  */
+function safeMapHref(mapLink?: string): string {
+  const u = String(mapLink || '').trim();
+  if (!u) return '';
+  // faqat http(s) yoki geo/maps havolalari
+  if (/^https?:\/\//i.test(u)) return u;
+  if (/^(geo:|maps:)/i.test(u)) return u;
+  return '';
+}
+
 export function buildInvitationShareHtml(inv: {
   husband: string;
   wife: string;
   date?: string;
   venueName?: string;
+  address?: string;
+  mapLink?: string;
   inviteText?: string;
   slug: string;
   templateId: string;
@@ -86,12 +97,14 @@ export function buildInvitationShareHtml(inv: {
   const { weekday, pretty, raw } = parseWeddingParts(inv.date);
   const dateLine = weekday ? `${pretty}  ·  ${weekday}` : pretty || raw;
   const venue = (inv.venueName || '').trim();
+  const address = (inv.address || '').trim();
+  const mapHref = safeMapHref(inv.mapLink);
   const wish = String(inv.inviteText || '')
     .trim()
     .replace(/\s+/g, ' ')
     .slice(0, 220);
 
-  // Ornament + tipografiya — Telegram HTML (bold, italic, blockquote, spoiler)
+  // Ornament + tipografiya — Telegram HTML (bold, italic, blockquote, spoiler, url)
   const lines: string[] = [
     `✦  <b>T A K L I F N O M A</b>  ✦`,
     ``,
@@ -104,8 +117,27 @@ export function buildInvitationShareHtml(inv: {
   if (dateLine) {
     lines.push(`📅  ${escHtml(dateLine)}`);
   }
+  // To'yxona nomi — location mapLink bilan bosiladigan havola
   if (venue) {
-    lines.push(`🏛  ${escHtml(venue)}`);
+    if (mapHref) {
+      lines.push(
+        `🏛  <a href="${escHtml(mapHref)}">${escHtml(venue)}</a>`
+      );
+    } else {
+      lines.push(`🏛  ${escHtml(venue)}`);
+    }
+  }
+  // Qo'shimcha manzil matni (agar bo'lsa) — ham xaritaga bog'lanadi
+  if (address && address !== venue) {
+    if (mapHref) {
+      lines.push(`📍  <a href="${escHtml(mapHref)}">${escHtml(address)}</a>`);
+    } else {
+      lines.push(`📍  ${escHtml(address)}`);
+    }
+  }
+  // Joy bor, lekin nom yo'q — faqat xarita
+  if (!venue && !address && mapHref) {
+    lines.push(`📍  <a href="${escHtml(mapHref)}">Xaritada ochish</a>`);
   }
 
   if (wish) {
@@ -142,6 +174,8 @@ export async function sendPaidInvitationPost(
     wife: string;
     date?: string;
     venueName?: string;
+    address?: string;
+    mapLink?: string;
     inviteText?: string;
     photos?: string[];
     slug: string;
@@ -149,6 +183,8 @@ export async function sendPaidInvitationPost(
   }
 ): Promise<void> {
   const { html, link, ogUrl } = buildInvitationShareHtml(inv);
+  const mapHref = safeMapHref(inv.mapLink);
+  const venue = (inv.venueName || '').trim() || 'Xarita';
 
   // 1) Qisqa tasdiq (faqat egaga) — toza, nafis
   try {
@@ -165,16 +201,14 @@ export async function sendPaidInvitationPost(
     /* ignore */
   }
 
-  // 2) Asosiy share-post: intro OG rasm + nafis caption (forward uchun ideal)
+  // 2) Asosiy share-post: intro OG rasm + nafis caption (to'yxona = xarita havolasi)
   try {
     await telegram.sendPhoto(chatId, ogUrl, {
       caption: html,
       parse_mode: 'HTML',
-      // show_caption_above_media: false — rasm tepada (Instagram/YouTube uslubi)
     });
   } catch (e) {
     console.warn('sendPhoto OG failed, fallback text:', e);
-    // Fallback: link birinchi — katta preview
     await telegram.sendMessage(chatId, `${link}\n\n${html}`, {
       parse_mode: 'HTML',
       link_preview_options: {
@@ -184,10 +218,9 @@ export async function sendPaidInvitationPost(
         url: link,
       },
     } as any);
-    return;
   }
 
-  // 3) Qo'shimcha: faqat havola (1 bosishda ochish / copy) — katta media preview
+  // 3) Taklifnoma havolasi — katta preview
   try {
     await telegram.sendMessage(chatId, link, {
       link_preview_options: {
@@ -198,5 +231,27 @@ export async function sendPaidInvitationPost(
     } as any);
   } catch {
     /* ignore */
+  }
+
+  // 4) Xarita (ikkala joyda ham — caption + alohida qulay post)
+  if (mapHref) {
+    try {
+      await telegram.sendMessage(
+        chatId,
+        `📍 <b>Manzil</b>\n` +
+          `<a href="${escHtml(mapHref)}">${escHtml(venue)}</a>\n` +
+          `<i>Xaritada ochish uchun bosing</i>`,
+        {
+          parse_mode: 'HTML',
+          link_preview_options: {
+            is_disabled: false,
+            prefer_large_media: true,
+            url: mapHref,
+          },
+        } as any
+      );
+    } catch {
+      /* ignore */
+    }
   }
 }

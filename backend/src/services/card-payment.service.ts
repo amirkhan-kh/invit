@@ -521,6 +521,8 @@ export async function notifyUserPaid(inv: {
     wife: full.wife,
     date: full.date,
     venueName: full.venueName,
+    address: full.address,
+    mapLink: full.mapLink,
     inviteText: full.inviteText,
     photos: full.photos,
     slug: full.slug,
