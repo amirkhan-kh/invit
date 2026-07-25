@@ -34,27 +34,119 @@ export default async function handler(req) {
   const full = { position: 'absolute', top: 0, left: 0, width: '1200px', height: '630px' };
   const top = d ? `TAKLIFNOMA      ${d}` : 'TAKLIFNOMA';
 
+  // Premium intro uslubi: rasm + qorong'u veil + script ismlar (Telegram link preview)
   const content = [
-    el('div', { style: { fontFamily: 'Serif', fontSize: 27, letterSpacing: 8, color: '#e7cfa6' } }, top),
-    el('div', { style: { fontFamily: 'Script', fontSize: 120, color: '#f5e6c8', lineHeight: 1.15, marginTop: 4 } }, h),
-    el('div', { style: { fontFamily: 'Script', fontSize: 62, color: '#c9a36b', lineHeight: 1 } }, '&'),
-    el('div', { style: { fontFamily: 'Script', fontSize: 120, color: '#f5e6c8', lineHeight: 1.15 } }, w),
+    el(
+      'div',
+      {
+        style: {
+          fontFamily: 'Serif',
+          fontSize: 26,
+          letterSpacing: 10,
+          color: '#e7cfa6',
+          textTransform: 'uppercase',
+        },
+      },
+      top
+    ),
+    el(
+      'div',
+      {
+        style: {
+          fontFamily: 'Script',
+          fontSize: 112,
+          color: '#f5e6c8',
+          lineHeight: 1.1,
+          marginTop: 12,
+          textAlign: 'center',
+        },
+      },
+      h
+    ),
+    el(
+      'div',
+      { style: { fontFamily: 'Script', fontSize: 56, color: '#c9a36b', lineHeight: 1, marginTop: 4, marginBottom: 4 } },
+      '&'
+    ),
+    el(
+      'div',
+      {
+        style: {
+          fontFamily: 'Script',
+          fontSize: 112,
+          color: '#f5e6c8',
+          lineHeight: 1.1,
+          textAlign: 'center',
+        },
+      },
+      w
+    ),
   ];
   if (wd) {
     content.push(
-      el('div', { style: { fontFamily: 'Serif', fontSize: 25, letterSpacing: 8, color: '#d8c8a6', marginTop: 14 } }, wd.toUpperCase())
+      el(
+        'div',
+        {
+          style: {
+            fontFamily: 'Serif',
+            fontSize: 24,
+            letterSpacing: 10,
+            color: '#d8c8a6',
+            marginTop: 18,
+            textTransform: 'uppercase',
+          },
+        },
+        wd.toUpperCase()
+      )
     );
   }
 
   const children = [];
-  if (img) {
-    children.push(el('img', { src: img, width: 1200, height: 630, style: { ...full, objectFit: 'cover' } }));
+  // Fon rasm (juftlik) yoki premium gradient
+  if (img && /^https?:\/\//i.test(img)) {
+    children.push(
+      el('img', {
+        src: img,
+        width: 1200,
+        height: 630,
+        style: { ...full, objectFit: 'cover' },
+      })
+    );
+  } else {
+    children.push(
+      el('div', {
+        style: {
+          ...full,
+          background: 'linear-gradient(145deg, #0e1512 0%, #1a2c22 45%, #0a1210 100%)',
+        },
+      })
+    );
   }
   children.push(
-    el('div', { style: { ...full, background: 'linear-gradient(180deg, rgba(10,20,16,0.5), rgba(10,20,16,0.85))' } })
+    el('div', {
+      style: {
+        ...full,
+        background:
+          'linear-gradient(180deg, rgba(10,20,16,0.45) 0%, rgba(10,20,16,0.55) 40%, rgba(10,20,16,0.88) 100%)',
+      },
+    })
   );
   children.push(
-    el('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' } }, content)
+    el(
+      'div',
+      {
+        style: {
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+          width: '100%',
+          padding: '40px',
+        },
+      },
+      content
+    )
   );
 
   const tree = el(

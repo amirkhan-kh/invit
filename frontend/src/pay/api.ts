@@ -82,3 +82,17 @@ export async function freeTestPayApi(invitationId: string): Promise<PaySession> 
   if (!res.ok) throw new Error(await parseError(res));
   return res.json();
 }
+
+/** To'lov to'xtatilsa — draft o'chadi */
+export async function abandonPay(invitationId: string): Promise<void> {
+  try {
+    await fetch(`/api/pay/${encodeURIComponent(invitationId)}`, {
+      method: 'POST',
+      headers: userIdHeader(),
+      body: JSON.stringify({ action: 'abandon', initData: initData() }),
+      keepalive: true,
+    });
+  } catch {
+    /* ignore — yopilishda tarmoq uzilishi mumkin */
+  }
+}

@@ -10,6 +10,7 @@ import {
   isAdmin,
   notifyAdminsPending,
   notifyUserPaid,
+  abandonUnpaidInvitation,
   freeTestPay,
   publicSessionAsync,
   startTransferSession,
@@ -111,10 +112,16 @@ router.post('/pay/:invitationId', async (req, res) => {
       return res.json(result.session);
     }
 
-    if (action === 'cancel') {
+    if (action === 'cancel' || action === 'abandon') {
       const result = await cancelTransferSession(invitationId, auth.userId);
       if (result.ok === false) return res.status(400).json({ message: result.error });
-      return res.json(result.session);
+      return res.json({ ok: true, deleted: true });
+    }
+
+    if (action === 'abandon_only') {
+      const r = await abandonUnpaidInvitation(invitationId, auth.userId);
+      if (r.ok === false) return res.status(400).json({ message: r.error });
+      return res.json({ ok: true, deleted: true });
     }
 
     if (action === 'admin_confirm') {
@@ -133,25 +140,7 @@ router.post('/pay/:invitationId', async (req, res) => {
       if (!isAdmin(auth.userId)) return res.status(403).json({ message: 'Faqat admin' });
       const result = await adminRejectPayment(invitationId, req.body?.reason);
       if (result.ok === false) return res.status(400).json({ message: result.error });
-      try {
-        const bot = getBot();
-        await bot.telegram.sendMessage(
-          result.inv.telegramUserId,
-          "❌ To'lovingiz tasdiqlanmadi.\n" +
-            (req.body?.reason ? `Sabab: ${req.body.reason}\n` : '') +
-            "Qaytadan to'lov qilish uchun pastdagi tugmani bosing.",
-          {
-            reply_markup: {
-              inline_keyboard: [
-                [{ text: "💳 Qayta to'lov", web_app: { url: paymentAppUrl(String(result.inv._id)) } }],
-              ],
-            },
-          }
-        );
-      } catch (e) {
-        console.error(e);
-      }
-      return res.json({ ok: true, session: await publicSessionAsync(result.inv) });
+      return res.json({ ok: true, deleted: true });
     }
 
     return res.status(400).json({ message: 'Noma’lum action' });

@@ -13,6 +13,7 @@ import {
   adminRejectPayment,
   isAdmin,
   notifyUserPaid,
+  purgeUnpaidForUser,
 } from '../services/card-payment.service';
 import { hideShopMenuForUser } from '../services/menu-button.service';
 
@@ -115,7 +116,14 @@ export function createBot(): Telegraf<MyContext> {
 
   bot.command(['start', 'restart'], async (ctx) => {
     resetSession(ctx);
-    // Boshida SHOP ko'rinmasin — faqat to'lov bosqichida yoqiladi
+    // To'lovgacha to'xtagan draftlar o'chadi — chalkashlik bo'lmasin
+    if (ctx.from?.id) {
+      try {
+        await purgeUnpaidForUser(ctx.from.id);
+      } catch (e) {
+        console.error('purgeUnpaid', e);
+      }
+    }
     if (ctx.chat?.id) {
       try {
         await hideShopMenuForUser(ctx.chat.id);
@@ -131,7 +139,17 @@ export function createBot(): Telegraf<MyContext> {
 
   bot.command('cancel', async (ctx) => {
     resetSession(ctx);
-    await ctx.reply("Jarayon bekor qilindi. Qaytadan boshlash uchun /start bosing.", Markup.removeKeyboard());
+    if (ctx.from?.id) {
+      try {
+        await purgeUnpaidForUser(ctx.from.id);
+      } catch {
+        /* ignore */
+      }
+    }
+    await ctx.reply(
+      "Jarayon bekor qilindi, kiritilgan ma'lumotlar o'chirildi.\nQaytadan: /start",
+      Markup.removeKeyboard()
+    );
   });
 
   // Admin: /pending — kutilayotgan to'lovlar
@@ -228,21 +246,10 @@ export function createBot(): Telegraf<MyContext> {
       await ctx.answerCbQuery(result.error, { show_alert: true });
       return;
     }
-    await ctx.answerCbQuery('Rad etildi');
-    try {
-      await ctx.telegram.sendMessage(
-        result.inv.telegramUserId,
-        "❌ To'lovingiz tasdiqlanmadi. Qaytadan urinib ko'ring yoki @elnox_uz ga yozing.",
-        Markup.inlineKeyboard([
-          [Markup.button.webApp("💳 Qayta to'lov", paymentAppUrl(String(result.inv._id)))],
-        ])
-      );
-    } catch (e) {
-      console.error(e);
-    }
+    await ctx.answerCbQuery("O'chirildi");
     try {
       await ctx.editMessageText(
-        ((ctx.callbackQuery.message as any)?.text || '') + '\n\n❌ Rad etildi'
+        ((ctx.callbackQuery.message as any)?.text || '') + "\n\n❌ Rad etildi — draft o'chirildi"
       );
     } catch {
       /* ignore */

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  abandonPay,
   cancelPay,
   declarePay,
   fetchMyPaySession,
@@ -83,11 +84,41 @@ export default function PayApp({
       wa?.expand();
       wa?.setHeaderColor?.('#0b1220');
       wa?.setBackgroundColor?.('#0b1220');
+      // Yopishdan oldin ogohlantirish (to'lov tugamaguncha)
+      (wa as any)?.enableClosingConfirmation?.();
     } catch {
       /* outside Telegram OK for preview */
     }
     load();
   }, [load]);
+
+  // Eslatma: visibilitychange da o'chirmaymiz — user bank ilovasiga o'tganda draft o'chib ketardi.
+  // Tozalash: «Bekor qilish», bot /start yoki /cancel.
+
+  // Faqat Mini App X bilan yopilganda (Telegram closing) — agar API bo'lsa
+  useEffect(() => {
+    const id = activeId || invitationId;
+    if (!id) return;
+    const wa = window.Telegram?.WebApp as any;
+    if (!wa?.onEvent) return;
+    const onClose = () => {
+      const paid = session?.isPaid || session?.paymentStatus === 'paid';
+      if (!paid) void abandonPay(id);
+    };
+    // Ba'zi clientlarda mavjud emas — xavfsiz ignore
+    try {
+      wa.onEvent('web_app_close', onClose);
+    } catch {
+      /* ignore */
+    }
+    return () => {
+      try {
+        wa.offEvent?.('web_app_close', onClose);
+      } catch {
+        /* ignore */
+      }
+    };
+  }, [activeId, invitationId, session?.isPaid, session?.paymentStatus]);
 
   // Timer
   useEffect(() => {
@@ -231,9 +262,14 @@ export default function PayApp({
     setBusy(true);
     setError('');
     try {
-      const s = await cancelPay(payId);
-      setSession(s);
+      await cancelPay(payId);
       haptic('light');
+      setSession(null);
+      try {
+        window.Telegram?.WebApp?.close();
+      } catch {
+        /* ignore */
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Xato');
     } finally {

@@ -76,12 +76,22 @@ export default async function handler(req: any, res: any) {
   }
 
   const title = data ? `${data.husband} & ${data.wife} — Taklifnoma` : "💍 To'y taklifnomasi — baxt.uz";
-  // og:image — taklifnoma ko'rinishida (rasm + yozuvlar) dinamik yasaladi
-  const rawImg = data && data.image ? data.image.trim() : GENERIC_IMG;
+  // og:image — intro (hero) uslubidagi dinamik rasm; relative photo → absolute
+  let rawImg = data && data.image ? String(data.image).trim() : '';
+  if (rawImg && rawImg.startsWith('/')) rawImg = `${origin}${rawImg}`;
+  if (!rawImg) rawImg = GENERIC_IMG;
   const wd = weekdayOf(data?.date || '');
+  // v= cache bust — yangi to'lovdan keyin Telegram eski previewni ushlab qolmasin
   const image = data
     ? `${origin}/api/og-image?` +
-      new URLSearchParams({ h: data.husband, w: data.wife, d: data.date || '', wd, img: rawImg }).toString()
+      new URLSearchParams({
+        h: data.husband,
+        w: data.wife,
+        d: data.date || '',
+        wd,
+        img: rawImg,
+        v: String(Date.now()).slice(0, -5),
+      }).toString()
     : GENERIC_IMG;
   const desc = data
     ? `${data.husband} va ${data.wife}ning to'y taklifnomasiga taklif qilinasiz. Ochish uchun bosing 💍`

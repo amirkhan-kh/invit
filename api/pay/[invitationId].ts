@@ -85,10 +85,10 @@ export default async function handler(req: any, res: any) {
       return res.status(200).json(result.session);
     }
 
-    if (action === 'cancel') {
+    if (action === 'cancel' || action === 'abandon' || action === 'abandon_only') {
       const result = await cancelTransferSession(invitationId, auth.userId);
       if (result.ok === false) return res.status(400).json({ message: result.error });
-      return res.status(200).json(result.session);
+      return res.status(200).json({ ok: true, deleted: true });
     }
 
     if (action === 'admin_confirm') {
@@ -107,22 +107,7 @@ export default async function handler(req: any, res: any) {
       if (!isAdmin(auth.userId)) return res.status(403).json({ message: 'Faqat admin' });
       const result = await adminRejectPayment(invitationId, req.body?.reason);
       if (result.ok === false) return res.status(400).json({ message: result.error });
-      try {
-        await getBot().telegram.sendMessage(
-          result.inv.telegramUserId,
-          "❌ To'lovingiz tasdiqlanmadi. Qaytadan urinib ko'ring.",
-          {
-            reply_markup: {
-              inline_keyboard: [
-                [{ text: "💳 Qayta to'lov", web_app: { url: paymentAppUrl(String(result.inv._id)) } }],
-              ],
-            },
-          }
-        );
-      } catch (e) {
-        console.error(e);
-      }
-      return res.status(200).json({ ok: true, session: await publicSessionAsync(result.inv) });
+      return res.status(200).json({ ok: true, deleted: true });
     }
 
     return res.status(400).json({ message: 'Noma’lum action' });

@@ -284,24 +284,82 @@ export async function declareTransferPaid(
   return { ok: true, session: publicSession(inv, merchant), autoConfirmed: false };
 }
 
+/**
+ * To'lov to'xtatilsa / bekor: to'lanmagan taklifnoma + rasmlar o'chadi (chalkashlik yo'q).
+ */
+export async function deleteUnpaidInvitation(inv: IInvitation): Promise<void> {
+  try {
+    const mongoose = await import('mongoose');
+    const ids: string[] = [];
+    for (const p of inv.photos || []) {
+      const m = String(p).match(/\/api\/photo\/([^/?#\s]+)/i);
+      if (m) ids.push(m[1]);
+      else if (p && !/^https?:\/\//i.test(String(p))) ids.push(String(p).replace(/^\/api\/photo\//, ''));
+    }
+    if (ids.length) {
+      await mongoose.connection.collection('photoblobs').deleteMany({ _id: { $in: ids as any } });
+    }
+  } catch (e) {
+    console.warn('photo cleanup:', e);
+  }
+  await Invitation.deleteOne({ _id: inv._id });
+}
+
+export async function abandonUnpaidInvitation(
+  invitationId: string,
+  telegramUserId: number
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const inv = await Invitation.findById(invitationId).catch(() => null);
+  if (!inv) return { ok: true }; // allaqachon yo'q
+  if (inv.isPaid || inv.paymentStatus === 'paid') {
+    return { ok: false, error: 'Allaqachon to‘langan — o‘chirib bo‘lmaydi' };
+  }
+  if (inv.telegramUserId !== telegramUserId && !config.adminTelegramIds.includes(telegramUserId)) {
+    return { ok: false, error: 'Ruxsat yo‘q' };
+  }
+  await deleteUnpaidInvitation(inv);
+  try {
+    const { hideShopMenuForUser } = await import('./menu-button.service');
+    await hideShopMenuForUser(telegramUserId);
+  } catch {
+    /* ignore */
+  }
+  return { ok: true };
+}
+
+/** Foydalanuvchining barcha to'lanmagan draftlarini o'chirish (/start tozalash) */
+export async function purgeUnpaidForUser(telegramUserId: number): Promise<number> {
+  const list = await Invitation.find({
+    telegramUserId,
+    isPaid: false,
+  }).limit(50);
+  for (const inv of list) {
+    await deleteUnpaidInvitation(inv);
+  }
+  try {
+    const { hideShopMenuForUser } = await import('./menu-button.service');
+    await hideShopMenuForUser(telegramUserId);
+  } catch {
+    /* ignore */
+  }
+  return list.length;
+}
+
 export async function cancelTransferSession(
   invitationId: string,
   telegramUserId: number
-): Promise<{ ok: true; session: PaymentSessionView } | { ok: false; error: string }> {
+): Promise<{ ok: true; deleted: boolean } | { ok: false; error: string }> {
   const inv = await getInvitationForPay(invitationId, telegramUserId);
-  if (!inv) return { ok: false, error: 'Taklifnoma topilmadi' };
-  const merchant = await loadMerchantCard();
-  if (inv.isPaid) return { ok: true, session: publicSession(inv, merchant) };
-  if (inv.paymentStatus === 'pending_review') {
-    return { ok: false, error: "Tekshiruvdagi to'lovni bekor qilib bo'lmaydi. Admin bilan bog'laning." };
+  if (!inv) return { ok: true, deleted: true };
+  if (inv.isPaid) return { ok: false, error: 'Allaqachon to‘langan' };
+  await deleteUnpaidInvitation(inv);
+  try {
+    const { hideShopMenuForUser } = await import('./menu-button.service');
+    await hideShopMenuForUser(telegramUserId);
+  } catch {
+    /* ignore */
   }
-  inv.paymentStatus = 'cancelled';
-  inv.paymentExpiresAt = null;
-  inv.paymentMethod = '';
-  await inv.save();
-  inv.paymentStatus = 'unpaid';
-  await inv.save();
-  return { ok: true, session: publicSession(inv, merchant) };
+  return { ok: true, deleted: true };
 }
 
 export async function adminConfirmPayment(
@@ -325,18 +383,19 @@ export async function adminConfirmPayment(
 export async function adminRejectPayment(
   invitationId: string,
   reason?: string
-): Promise<{ ok: true; inv: IInvitation } | { ok: false; error: string }> {
+): Promise<{ ok: true; deleted: boolean } | { ok: false; error: string }> {
   const inv = await Invitation.findById(invitationId).catch(() => null);
   if (!inv) return { ok: false, error: 'Topilmadi' };
   if (inv.isPaid) return { ok: false, error: 'Allaqachon to‘langan' };
-
-  inv.paymentStatus = 'unpaid';
-  inv.paymentMethod = '';
-  inv.paymentExpiresAt = null;
-  inv.paymentDeclaredAt = null;
-  inv.paymentNote = reason || 'Admin rad etdi';
-  await inv.save();
-  return { ok: true, inv };
+  const uid = inv.telegramUserId;
+  await deleteUnpaidInvitation(inv);
+  try {
+    const { hideShopMenuForUser } = await import('./menu-button.service');
+    await hideShopMenuForUser(uid);
+  } catch {
+    /* ignore */
+  }
+  return { ok: true, deleted: true };
 }
 
 /** Telegram WebApp initData tekshiruvi */
@@ -437,8 +496,9 @@ export async function notifyUserPaid(inv: {
   const { getBot } = await import('../bot/bot');
   const { hideShopMenuForUser } = await import('./menu-button.service');
   const bot = getBot();
+  // Havola birinchi qatorda — Telegram rich preview (OG intro rasm) chiqadi.
+  // Summa/ismlar matnda takrorlanmaydi — preview kartochkada ko'rinadi.
   const link = invitationLink(inv.slug, inv.templateId);
-  const amount = inv.price.toLocaleString('ru-RU');
   try {
     await hideShopMenuForUser(inv.telegramUserId);
   } catch {
@@ -446,11 +506,10 @@ export async function notifyUserPaid(inv: {
   }
   await bot.telegram.sendMessage(
     inv.telegramUserId,
-    `✅ *To'lovingiz tasdiqlandi!*\n` +
-      `Taklifnomangiz faollashtirildi.\n\n` +
-      `💰 Summa: ${amount} so'm\n` +
-      `👰 ${inv.wife} & 🤵 ${inv.husband}\n\n` +
-      `🔗 Havola:\n${link}`,
-    { parse_mode: 'Markdown' }
+    `${link}\n\n✅ To'lovingiz tasdiqlandi!`,
+    {
+      // link preview yoqilgan (default); disable_web_page_preview ishlatilmaydi
+      link_preview_options: { is_disabled: false, prefer_large_media: true, show_above_text: true },
+    } as any
   );
 }
