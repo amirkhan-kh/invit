@@ -18,22 +18,23 @@ function col() {
 }
 
 export async function loadMerchantCard(): Promise<{ number: string; holder: string; ready: boolean; source: string }> {
-  const fromEnv = getMerchantCardFromEnv();
-  if (fromEnv.ready) {
-    return { ...fromEnv, source: 'env' };
-  }
-
+  // Avvalo MongoDB (seed:card / yangilanish) — Vercel eski env ushlab qolmasin
   try {
     if (mongoose.connection.readyState === 1) {
       const doc = (await col().findOne({ _id: KEY as any })) as unknown as MerchantDoc | null;
       const number = cleanCardDigitsLike(doc?.number || '');
       const holder = String(doc?.holder || '—').trim();
       if (number.length >= 16) {
-        return { number, holder, ready: true, source: 'mongodb' };
+        return { number, holder: holder || '—', ready: true, source: 'mongodb' };
       }
     }
   } catch (e) {
     console.warn('merchant card db read:', e);
+  }
+
+  const fromEnv = getMerchantCardFromEnv();
+  if (fromEnv.ready) {
+    return { ...fromEnv, source: 'env' };
   }
 
   return { number: '', holder: '—', ready: false, source: 'none' };
