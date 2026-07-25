@@ -492,24 +492,38 @@ export async function notifyUserPaid(inv: {
   husband: string;
   wife: string;
   price: number;
+  date?: string;
+  venueName?: string;
+  inviteText?: string;
+  photos?: string[];
 }): Promise<void> {
   const { getBot } = await import('../bot/bot');
   const { hideShopMenuForUser } = await import('./menu-button.service');
+  const { sendPaidInvitationPost } = await import('./invitation-share.service');
   const bot = getBot();
-  // Havola birinchi qatorda — Telegram rich preview (OG intro rasm) chiqadi.
-  // Summa/ismlar matnda takrorlanmaydi — preview kartochkada ko'rinadi.
-  const link = invitationLink(inv.slug, inv.templateId);
   try {
     await hideShopMenuForUser(inv.telegramUserId);
   } catch {
     /* ignore */
   }
-  await bot.telegram.sendMessage(
-    inv.telegramUserId,
-    `${link}\n\n✅ To'lovingiz tasdiqlandi!`,
-    {
-      // link preview yoqilgan (default); disable_web_page_preview ishlatilmaydi
-      link_preview_options: { is_disabled: false, prefer_large_media: true, show_above_text: true },
-    } as any
-  );
+
+  // To'liq hujjat (sana, joy, matn, rasmlar) — share post uchun
+  let full = inv as any;
+  try {
+    const doc = await Invitation.findById((inv as any)._id || (inv as any).id).lean();
+    if (doc) full = { ...inv, ...doc };
+  } catch {
+    /* use inv as-is */
+  }
+
+  await sendPaidInvitationPost(bot.telegram, inv.telegramUserId, {
+    husband: full.husband,
+    wife: full.wife,
+    date: full.date,
+    venueName: full.venueName,
+    inviteText: full.inviteText,
+    photos: full.photos,
+    slug: full.slug,
+    templateId: full.templateId,
+  });
 }

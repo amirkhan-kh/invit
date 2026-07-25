@@ -75,13 +75,14 @@ export default async function handler(req: any, res: any) {
     html = '<!doctype html><html lang="uz"><head><title>Taklifnoma</title></head><body><div id="root"></div></body></html>';
   }
 
-  const title = data ? `${data.husband} & ${data.wife} — Taklifnoma` : "💍 To'y taklifnomasi — baxt.uz";
-  // og:image — intro (hero) uslubidagi dinamik rasm; relative photo → absolute
+  const title = data
+    ? `✦ ${data.husband} & ${data.wife} — Taklifnoma`
+    : "✦ To'y taklifnomasi — baxt.uz";
+  // og:image — intro hero (dinamik); relative photo → absolute
   let rawImg = data && data.image ? String(data.image).trim() : '';
   if (rawImg && rawImg.startsWith('/')) rawImg = `${origin}${rawImg}`;
   if (!rawImg) rawImg = GENERIC_IMG;
   const wd = weekdayOf(data?.date || '');
-  // v= cache bust — yangi to'lovdan keyin Telegram eski previewni ushlab qolmasin
   const image = data
     ? `${origin}/api/og-image?` +
       new URLSearchParams({
@@ -90,23 +91,32 @@ export default async function handler(req: any, res: any) {
         d: data.date || '',
         wd,
         img: rawImg,
-        v: String(Date.now()).slice(0, -5),
+        tpl: template,
+        v: '3',
       }).toString()
     : GENERIC_IMG;
   const desc = data
-    ? `${data.husband} va ${data.wife}ning to'y taklifnomasiga taklif qilinasiz. Ochish uchun bosing 💍`
+    ? `Sizni ${data.husband} va ${data.wife}ning to‘y marosimiga taklif etamiz${data.date ? ` · ${data.date}` : ''}. Ochish uchun bosing 💍`
     : "Nafis onlayn to'y taklifnomasi — animatsiya, musiqa va xarita bilan.";
   const url = `${origin}/preview/${template}/${slug}`;
 
   html = setTitle(html, title);
   html = setNamedMeta(html, 'description', desc);
   html = setMeta(html, 'og:type', 'website');
+  html = setMeta(html, 'og:site_name', 'baxt.uz');
   html = setMeta(html, 'og:title', title);
   html = setMeta(html, 'og:description', desc);
   html = setMeta(html, 'og:image', image);
   html = setMeta(html, 'og:image:width', '1200');
   html = setMeta(html, 'og:image:height', '630');
+  html = setMeta(html, 'og:image:alt', title);
   html = setMeta(html, 'og:url', url);
+  html = setMeta(html, 'og:locale', 'uz_UZ');
+  html = setNamedMeta(html, 'twitter:card', 'summary_large_image');
+  html = setNamedMeta(html, 'twitter:title', title);
+  html = setNamedMeta(html, 'twitter:description', desc);
+  html = setNamedMeta(html, 'twitter:image', image);
+  html = setNamedMeta(html, 'theme-color', '#0e1512');
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=300');
