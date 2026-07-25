@@ -338,28 +338,31 @@ export default function PayApp({
 
         <div className="pay-label">To&apos;lov usuli</div>
         <div className="pay-methods">
-          {session.methods.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              className={`pay-method ${m.id}${m.soon ? ' soon' : ''}`}
-              disabled={!m.enabled || busy || !!m.soon}
-              onClick={() => onMethod(m.id)}
-            >
-              <div className="ml">{m.label}</div>
-              <div className="ms">{m.soon ? 'Tez orada' : m.subtitle}</div>
-            </button>
-          ))}
+          {session.methods.map((m) => {
+            const canUse = m.enabled !== false && !m.soon;
+            return (
+              <button
+                key={m.id}
+                type="button"
+                className={`pay-method ${m.id}${!canUse ? ' soon' : ''}`}
+                disabled={!canUse || busy}
+                onClick={() => onMethod(m.id)}
+              >
+                <div className="ml">{m.label}</div>
+                <div className="ms">{m.soon ? 'Tez orada' : m.subtitle}</div>
+              </button>
+            );
+          })}
         </div>
 
         <p style={{ fontSize: 12, color: '#7d8eab', marginTop: 12, lineHeight: 1.45 }}>
           Eng kam: 1 000 so&apos;m · Karta o&apos;tkazma · Admin tasdiqlagach faollashadi
         </p>
 
-        <a className="pay-help" href="https://t.me/Amirxonn_uz" target="_blank" rel="noreferrer">
+        <a className="pay-help" href="https://t.me/elnox_uz" target="_blank" rel="noreferrer">
           <span>
             Texnik yordam
-            <small>@Amirxonn_uz</small>
+            <small>@elnox_uz</small>
           </span>
           <span>→</span>
         </a>

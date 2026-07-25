@@ -8,6 +8,8 @@ import { Invitation, IInvitation, PaymentMethod, TEMPLATE_PRICES } from '../mode
 import {
   config,
   formatCardDisplay,
+  getMerchantCard,
+  getPayCards,
   getPayMethod,
   invitationLink,
   paymentAppUrl,
@@ -94,33 +96,16 @@ export function publicSession(inv: IInvitation): PaymentSessionView {
     paymentMethod: inv.paymentMethod || '',
     expiresAt: inv.paymentExpiresAt ? new Date(inv.paymentExpiresAt).toISOString() : null,
     remainingSeconds: inv.paymentStatus === 'awaiting_transfer' ? rem : 0,
-    methods: [
-      {
-        id: 'humo',
-        label: config.payCards.humo.label,
-        subtitle: config.payCards.humo.subtitle,
-        enabled: config.payCards.humo.enabled,
-      },
-      {
-        id: 'uzcard',
-        label: config.payCards.uzcard.label,
-        subtitle: config.payCards.uzcard.subtitle,
-        enabled: config.payCards.uzcard.enabled,
-      },
-      {
-        id: 'bankomat',
-        label: config.payCards.bankomat.label,
-        subtitle: config.payCards.bankomat.subtitle,
-        enabled: config.payCards.bankomat.enabled,
-      },
-      {
-        id: 'international',
-        label: config.payCards.international.label,
-        subtitle: config.payCards.international.subtitle,
-        enabled: false,
-        soon: true,
-      },
-    ],
+    methods: (() => {
+      const cards = getPayCards();
+      return (['humo', 'uzcard', 'bankomat', 'international'] as const).map((id) => ({
+        id: cards[id].id,
+        label: cards[id].label,
+        subtitle: cards[id].subtitle,
+        enabled: cards[id].enabled,
+        soon: cards[id].soon,
+      }));
+    })(),
     card:
       method && inv.paymentStatus === 'awaiting_transfer' && rem > 0
         ? {
@@ -135,7 +120,9 @@ export function publicSession(inv: IInvitation): PaymentSessionView {
       "Summani 1 so'mga ham o'zgartirmang",
       `${config.paySessionMinutes} daqiqa ichida to'lang`,
       "Faqat ko'rsatilgan kartaga",
-      "Faqat kartadan kartaga (bankomat orqali emas — bankomat usuli tanlangan bo'lsa terminal orqali)",
+      inv.paymentMethod === 'bankomat'
+        ? 'Bankomat / terminal orqali to‘ldirish mumkin'
+        : "Faqat kartadan kartaga o'tkazma",
     ],
     invitationUrl: inv.isPaid ? invitationLink(inv.slug, inv.templateId) : null,
     payUrl: paymentAppUrl(String(inv._id)),
@@ -171,17 +158,20 @@ export async function startTransferSession(
     return { ok: false, error: "To'lov tekshiruvda. Iltimos, kuting." };
   }
 
-  const card = getPayMethod(method);
-  if (!card || !card.enabled || !card.number) {
-    return { ok: false, error: "Bu to'lov usuli hozircha mavjud emas" };
+  const allowed = ['uzcard', 'humo', 'bankomat', 'international'];
+  if (!allowed.includes(method)) {
+    return { ok: false, error: "To'lov usuli noto'g'ri" };
+  }
+  if (!getMerchantCard().ready) {
+    return { ok: false, error: "To'lov kartasi sozlanmagan (admin: PAY_UZCARD_NUMBER)" };
   }
 
-  inv.paymentMethod = method;
+  inv.paymentMethod = method as PaymentMethod;
+  inv.paymentNote = '';
   inv.paymentAmount = inv.price || TEMPLATE_PRICES[inv.templateId];
   inv.paymentStatus = 'awaiting_transfer';
   inv.paymentExpiresAt = new Date(Date.now() + config.paySessionMinutes * 60 * 1000);
   inv.paymentDeclaredAt = null;
-  inv.paymentNote = '';
   await inv.save();
 
   return { ok: true, session: publicSession(inv) };
@@ -366,9 +356,15 @@ export async function notifyUserPaid(inv: {
   price: number;
 }): Promise<void> {
   const { getBot } = await import('../bot/bot');
+  const { hideShopMenuForUser } = await import('./menu-button.service');
   const bot = getBot();
   const link = invitationLink(inv.slug, inv.templateId);
   const amount = inv.price.toLocaleString('ru-RU');
+  try {
+    await hideShopMenuForUser(inv.telegramUserId);
+  } catch {
+    /* ignore */
+  }
   await bot.telegram.sendMessage(
     inv.telegramUserId,
     `✅ *To'lovingiz tasdiqlandi!*\n` +

@@ -14,6 +14,7 @@ import {
   isAdmin,
   notifyUserPaid,
 } from '../services/card-payment.service';
+import { hideShopMenuForUser } from '../services/menu-button.service';
 
 const TEMPLATES: { id: TemplateId; label: string; desc: string }[] = [
   { id: 'standard', label: '🌿 Standart', desc: 'Sodda va nafis — yengil animatsiya, fon musiqasi, countdown va xarita.' },
@@ -26,7 +27,7 @@ const DEMO_FOR: Record<TemplateId, string> = {
   medium: 'azizmalika',
   premium: 'sardorkamila',
 };
-const SUPPORT_USERNAME_MD = '@Amirxonn\\_uz';
+const SUPPORT_USERNAME_MD = '@elnox\\_uz';
 
 /**
  * Botni to'liq sozlab qaytaradi (launch QILMAYDI).
@@ -114,7 +115,14 @@ export function createBot(): Telegraf<MyContext> {
 
   bot.command(['start', 'restart'], async (ctx) => {
     resetSession(ctx);
-    // Telegraf start payload
+    // Boshida SHOP ko'rinmasin — faqat to'lov bosqichida yoqiladi
+    if (ctx.chat?.id) {
+      try {
+        await hideShopMenuForUser(ctx.chat.id);
+      } catch {
+        /* ignore */
+      }
+    }
     const text = (ctx.message as any)?.text || '';
     const parts = text.split(/\s+/);
     if (parts[1]) (ctx as any).startPayload = parts[1];
@@ -195,6 +203,11 @@ export function createBot(): Telegraf<MyContext> {
       console.error(e);
     }
     try {
+      await hideShopMenuForUser(result.inv.telegramUserId);
+    } catch {
+      /* ignore */
+    }
+    try {
       await ctx.editMessageText(
         (ctx.callbackQuery.message as any)?.text + '\n\n✅ Tasdiqlandi',
         { parse_mode: undefined }
@@ -219,7 +232,7 @@ export function createBot(): Telegraf<MyContext> {
     try {
       await ctx.telegram.sendMessage(
         result.inv.telegramUserId,
-        "❌ To'lovingiz tasdiqlanmadi. Qaytadan urinib ko'ring yoki @Amirxonn_uz ga yozing.",
+        "❌ To'lovingiz tasdiqlanmadi. Qaytadan urinib ko'ring yoki @elnox_uz ga yozing.",
         Markup.inlineKeyboard([
           [Markup.button.webApp("💳 Qayta to'lov", paymentAppUrl(String(result.inv._id)))],
         ])
@@ -238,7 +251,7 @@ export function createBot(): Telegraf<MyContext> {
 
   bot.help((ctx) =>
     ctx.reply(
-      "Yangi taklifnoma yaratish uchun /start bosing.\n\n📩 Savol yoki yordam: @Amirxonn_uz"
+      "Yangi taklifnoma yaratish uchun /start bosing.\n\n📩 Savol yoki yordam: @elnox_uz"
     )
   );
 

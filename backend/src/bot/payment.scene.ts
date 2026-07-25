@@ -1,7 +1,7 @@
 import { Scenes, Markup } from 'telegraf';
 import { MyContext, textOf } from './context';
 import { Invitation } from '../models/invit.back';
-import { invitationLink, paymentAppUrl, config } from '../config';
+import { invitationLink, paymentAppUrl, getMerchantCard } from '../config';
 import { detectLang, INVITE_TEXT } from '../utils/format';
 import { publicSession } from '../services/card-payment.service';
 
@@ -59,14 +59,13 @@ export const paymentScene = new Scenes.WizardScene<MyContext>(
     const session = publicSession(inv);
     const price = fmt(session.amount);
 
-    const cardsReady =
-      config.payCards.uzcard.enabled || config.payCards.humo.enabled;
+    const cardsReady = getMerchantCard().ready;
 
     if (!cardsReady) {
       await ctx.reply(
         "⚠️ To'lov kartasi sozlanmagan.\n" +
           'Admin `PAY_UZCARD_NUMBER` va `PAY_UZCARD_HOLDER` ni .env ga qo‘shishi kerak.\n' +
-          'Hozircha yordam: @Amirxonn_uz'
+          'Hozircha yordam: @elnox_uz'
       );
       return ctx.scene.leave();
     }

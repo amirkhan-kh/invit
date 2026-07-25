@@ -57,7 +57,7 @@ export default async function handler(req: any, res: any) {
 
     if (action === 'start') {
       const method = String(req.body?.method || '').toLowerCase();
-      if (!['uzcard', 'humo', 'bankomat'].includes(method)) {
+      if (!['uzcard', 'humo', 'bankomat', 'international'].includes(method)) {
         return res.status(400).json({ message: "To'lov usuli noto'g'ri" });
       }
       const result = await startTransferSession(invitationId, method as any, auth.userId);

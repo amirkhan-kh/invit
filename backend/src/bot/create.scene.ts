@@ -12,6 +12,7 @@ import { Invitation, TEMPLATE_PRICES, TemplateId } from '../models/invit.back';
 import { makeSlug } from '../utils/format';
 import { config, paymentAppUrl } from '../config';
 import { normalizePhotoList } from '../utils/photo-url';
+import { showShopMenuForUser } from '../services/menu-button.service';
 
 const TEMPLATE_LABELS: Record<TemplateId, string> = {
   standard: 'Standart',
@@ -31,7 +32,7 @@ async function uniqueSlug(husband: string, wife: string): Promise<string> {
   return slug;
 }
 
-const doneKeyboard = Markup.keyboard([['✅ Tayyor', '⏭ Rasmsiz davom etish']])
+const skipPhotoKeyboard = Markup.keyboard([['✅ Davom etish', '⏭ Rasmsiz']])
   .resize()
   .oneTime();
 
@@ -151,97 +152,105 @@ export const createScene = new Scenes.WizardScene<MyContext>(
     ctx.scene.session.inviteText = res.value;
 
     await ctx.reply(
-      `📷 Endi ${config.maxPhotos} tagacha rasm yuborishingiz mumkin (juftlik rasmlari).\n` +
-        'Rasmlarni birma-bir yuboring. Tugagach «✅ Tayyor» tugmasini bosing.\n' +
-        'Rasmsiz davom etish ham mumkin.',
-      doneKeyboard
+      `📷 Juftlik rasmlarini yuboring (ixtiyoriy, max ${config.maxPhotos}).\n` +
+        `Tayyor bo'lgach «✅ Davom etish» — to'lovga o'tasiz.`,
+      skipPhotoKeyboard
     );
     return ctx.wizard.next();
   },
 
-  // 6 — rasmlar (ko'p marta ishlaydi) yoki yakunlash
+  // 6 — rasmlar: status yozilmaydi; 3 ta yoki «Davom etish» → to'lov
   async (ctx) => {
     const photos = ctx.scene.session.photos || [];
     const fileId = photoOf(ctx);
     const text = textOf(ctx);
 
-    // Rasm yuborildi
     if (fileId) {
       if (photos.length >= config.maxPhotos) {
-        await ctx.reply(`Siz allaqachon ${config.maxPhotos} ta rasm yubordingiz. «✅ Tayyor» bosing.`);
-        return; // shu bosqichda qolamiz
+        return finalizeInvitation(ctx);
       }
       try {
         const url = await downloadTelegramPhoto(ctx.telegram, fileId);
         photos.push(url);
         ctx.scene.session.photos = photos;
         if (photos.length >= config.maxPhotos) {
-          await ctx.reply(`✅ ${photos.length}/${config.maxPhotos} rasm qabul qilindi. «✅ Tayyor» bosing.`);
-        } else {
-          await ctx.reply(`✅ ${photos.length}/${config.maxPhotos} rasm qabul qilindi. Yana yuboring yoki «✅ Tayyor».`);
+          return finalizeInvitation(ctx);
         }
-      } catch (e) {
-        await ctx.reply('❌ Rasmni yuklab bo\'lmadi, qaytadan yuboring.');
+      } catch {
+        await ctx.reply("❌ Rasmni yuklab bo'lmadi, qaytadan yuboring.");
       }
-      return; // shu bosqichda qolamiz
+      return;
     }
 
-    // Yakunlash
-    const finalize = /tayyor|rasmsiz|davom|skip/i.test(text || '');
-    if (!finalize) {
-      return ctx.reply('Rasm yuboring yoki «✅ Tayyor» tugmasini bosing.', doneKeyboard);
+    if (/rasmsiz|davom|skip|tayyor/i.test(text || '')) {
+      return finalizeInvitation(ctx);
     }
 
-    // === Taklifnomani yaratamiz ===
-    const s = ctx.scene.session;
-    const templateId = (s.templateId || 'medium') as TemplateId;
-    try {
-      const slug = await uniqueSlug(s.husband!, s.wife!);
-      const inv = await Invitation.create({
-        slug,
-        templateId,
-        husband: s.husband,
-        wife: s.wife,
-        date: s.date,
-        venueName: s.venueName,
-        address: s.address || '', // faqat xaritadan (venue) kelsa to'ladi, aks holda bo'sh
-        mapLink: s.mapLink,
-        inviteText: s.inviteText,
-        photos: normalizePhotoList(s.photos || []),
-        price: TEMPLATE_PRICES[templateId],
-        paymentStatus: 'unpaid',
-        paymentAmount: TEMPLATE_PRICES[templateId],
-        telegramUserId: ctx.from?.id,
-        telegramUsername: ctx.from?.username || '',
-      });
-
-      const price = TEMPLATE_PRICES[templateId].toLocaleString('ru-RU');
-      const payUrl = paymentAppUrl(String(inv._id));
-      // Havola FAQAT to'lovdan keyin yuboriladi (sendSuccess / admin confirm).
-      await ctx.reply(
-        `🎉 *Taklifnoma tayyor — to'lov kutilmoqda*\n\n` +
-          `👰 ${inv.wife} & 🤵 ${inv.husband}\n` +
-          `📅 ${inv.date}\n` +
-          `🏛 ${inv.venueName}\n` +
-          (inv.address ? `📍 ${inv.address}\n` : '') +
-          `🖼 Shablon: ${TEMPLATE_LABELS[templateId]}\n` +
-          `🖼 Rasmlar: ${(inv.photos || []).length} ta\n\n` +
-          `💳 Narxi: *${price} so'm*\n\n` +
-          `⬇️ *SHOP / To'lov* tugmasini bosing.\n` +
-          `HUMO yoki UZCARD orqali o'tkazma qiling.\n` +
-          `✅ To'lov tasdiqlangach *shaxsiy havola* yuboriladi.`,
-        {
-          parse_mode: 'Markdown',
-          ...Markup.inlineKeyboard([
-            [Markup.button.webApp(`🛒 SHOP — To'lov (${price} so'm)`, payUrl)],
-          ]),
-        }
+    if (text) {
+      return ctx.reply(
+        'Rasm yuboring yoki «✅ Davom etish» / «⏭ Rasmsiz» ni bosing.',
+        skipPhotoKeyboard
       );
-    } catch (err) {
-      console.error('Taklifnoma yaratishda xato:', err);
-      await ctx.reply('❌ Xatolik yuz berdi. Qaytadan /start bosing.');
     }
-
-    return ctx.scene.leave();
+    return;
   }
 );
+
+async function finalizeInvitation(ctx: MyContext) {
+  const s = ctx.scene.session;
+  const templateId = (s.templateId || 'medium') as TemplateId;
+  try {
+    const slug = await uniqueSlug(s.husband!, s.wife!);
+    const inv = await Invitation.create({
+      slug,
+      templateId,
+      husband: s.husband,
+      wife: s.wife,
+      date: s.date,
+      venueName: s.venueName,
+      address: s.address || '',
+      mapLink: s.mapLink,
+      inviteText: s.inviteText,
+      photos: normalizePhotoList(s.photos || []),
+      price: TEMPLATE_PRICES[templateId],
+      paymentStatus: 'unpaid',
+      paymentAmount: TEMPLATE_PRICES[templateId],
+      telegramUserId: ctx.from?.id,
+      telegramUsername: ctx.from?.username || '',
+    });
+
+    const price = TEMPLATE_PRICES[templateId].toLocaleString('ru-RU');
+    const payUrl = paymentAppUrl(String(inv._id));
+    const chatId = ctx.chat?.id || ctx.from?.id;
+
+    if (chatId) {
+      try {
+        await showShopMenuForUser(chatId, String(inv._id));
+      } catch (e) {
+        console.error('showShopMenu', e);
+      }
+    }
+
+    await ctx.reply('✅ Saqlandi', Markup.removeKeyboard());
+    await ctx.reply(
+      `🎉 *Taklifnoma tayyor — to'lov*\n\n` +
+        `👰 ${inv.wife} & 🤵 ${inv.husband}\n` +
+        `📅 ${inv.date}\n` +
+        `🏛 ${inv.venueName}\n` +
+        `🖼 ${TEMPLATE_LABELS[templateId]} · ${(inv.photos || []).length} ta rasm\n\n` +
+        `💳 *${price} so'm*\n\n` +
+        `⬇️ *SHOP* tugmasini bosing (pastda paydo bo'ladi).\n` +
+        `To'lovdan keyin shaxsiy havola yuboriladi.`,
+      {
+        parse_mode: 'Markdown',
+        ...Markup.inlineKeyboard([
+          [Markup.button.webApp(`🛒 SHOP — To'lov (${price} so'm)`, payUrl)],
+        ]),
+      }
+    );
+  } catch (err) {
+    console.error('Taklifnoma yaratishda xato:', err);
+    await ctx.reply("❌ Xatolik yuz berdi. Qaytadan /start bosing.", Markup.removeKeyboard());
+  }
+  return ctx.scene.leave();
+}

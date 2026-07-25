@@ -25,7 +25,7 @@ function cleanCardDigits(raw: string | undefined): string {
   return String(raw || '').replace(/\D/g, '');
 }
 
-export type PayMethodId = 'uzcard' | 'humo' | 'bankomat';
+export type PayMethodId = 'uzcard' | 'humo' | 'bankomat' | 'international';
 
 export interface PayCardInfo {
   id: PayMethodId;
@@ -37,13 +37,71 @@ export interface PayCardInfo {
   soon?: boolean;
 }
 
-const uzcardNumber = cleanCardDigits(process.env.PAY_UZCARD_NUMBER || process.env.PAY_CARD_NUMBER);
-const uzcardHolder = (process.env.PAY_UZCARD_HOLDER || process.env.PAY_CARD_HOLDER || '').trim();
-const humoNumber = cleanCardDigits(process.env.PAY_HUMO_NUMBER);
-const humoHolder = (process.env.PAY_HUMO_HOLDER || uzcardHolder).trim();
+/** Har so'rovda env o'qiladi (Vercel serverless + redeploy uchun) */
+export function getMerchantCard(): { number: string; holder: string; ready: boolean } {
+  const number = cleanCardDigits(
+    process.env.PAY_UZCARD_NUMBER ||
+      process.env.PAY_HUMO_NUMBER ||
+      process.env.PAY_CARD_NUMBER ||
+      ''
+  );
+  const holder = (
+    process.env.PAY_UZCARD_HOLDER ||
+    process.env.PAY_HUMO_HOLDER ||
+    process.env.PAY_CARD_HOLDER ||
+    ''
+  ).trim();
+  return { number, holder: holder || '—', ready: number.length >= 16 };
+}
+
+export function getPayCards(): Record<PayMethodId, PayCardInfo> {
+  const { number, holder, ready } = getMerchantCard();
+  const humoNum = cleanCardDigits(process.env.PAY_HUMO_NUMBER) || number;
+  const humoHold = (process.env.PAY_HUMO_HOLDER || holder).trim() || holder;
+
+  // Bitta merchant karta bo'lsa — HUMO/UZCARD/BANKOMAT hammasi ishlaydi
+  // (mijoz o'z bank ilovasida usulni tanlaydi; biz qabul kartasini ko'rsatamiz)
+  return {
+    humo: {
+      id: 'humo',
+      label: 'HUMO',
+      subtitle: "Kartaga o'tkazma",
+      number: humoNum,
+      holder: humoHold,
+      enabled: ready,
+    },
+    uzcard: {
+      id: 'uzcard',
+      label: 'UZCARD',
+      subtitle: "Kartaga o'tkazma",
+      number,
+      holder,
+      enabled: ready,
+    },
+    bankomat: {
+      id: 'bankomat',
+      label: 'BANKOMAT',
+      subtitle: 'Terminal orqali',
+      number,
+      holder,
+      enabled: ready,
+    },
+    // Xalqaro — xuddi shu karta (chetdan P2P/transfer), keyin alohida Visa bo'lishi mumkin
+    international: {
+      id: 'international',
+      label: 'XALQARO',
+      subtitle: "Kartaga o'tkazma",
+      number,
+      holder,
+      enabled: ready,
+      soon: false,
+    },
+  };
+}
 
 export const config = {
   botToken: process.env.BOT_TOKEN as string,
+  supportUsername: (process.env.SUPPORT_USERNAME || 'elnox_uz').replace(/^@/, ''),
 
   mongoUri: (process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/invitationDB').trim(),
   port: parsePort(process.env.PORT),
@@ -57,46 +115,13 @@ export const config = {
   mediaDir: path.resolve(__dirname, '..', 'media'),
   maxPhotos: 3,
 
-  // Karta o'tkazma (Hamkorbank UZCARD va boshqalar)
   paySessionMinutes: Math.max(3, Number(process.env.PAY_SESSION_MINUTES || 7) || 7),
   payMinAmount: Math.max(1000, Number(process.env.PAY_MIN_AMOUNT || 1000) || 1000),
   adminTelegramIds: parseAdminIds(process.env.ADMIN_TELEGRAM_IDS),
 
-  payCards: {
-    uzcard: {
-      id: 'uzcard' as const,
-      label: 'UZCARD',
-      subtitle: "Kartaga o'tkazma",
-      number: uzcardNumber,
-      holder: uzcardHolder || '—',
-      enabled: uzcardNumber.length >= 16,
-    },
-    humo: {
-      id: 'humo' as const,
-      label: 'HUMO',
-      subtitle: "Kartaga o'tkazma",
-      number: humoNumber || uzcardNumber,
-      holder: humoHolder || uzcardHolder || '—',
-      // HUMO alohida bo'lmasa — UZCARD raqamiga yo'naltiramiz (ko'p banklar qabul qiladi)
-      enabled: (humoNumber.length >= 16) || uzcardNumber.length >= 16,
-    },
-    bankomat: {
-      id: 'bankomat' as const,
-      label: 'BANKOMAT',
-      subtitle: 'Terminal orqali',
-      number: uzcardNumber,
-      holder: uzcardHolder || '—',
-      enabled: uzcardNumber.length >= 16,
-    },
-    international: {
-      id: 'international' as const,
-      label: 'XALQARO',
-      subtitle: 'Tez orada',
-      number: '',
-      holder: '',
-      enabled: false,
-      soon: true,
-    },
+  /** @deprecated use getPayCards() — saqlangan qulaylik uchun */
+  get payCards() {
+    return getPayCards();
   },
 };
 
@@ -106,15 +131,14 @@ export function invitationLink(slug: string, templateId?: string): string {
     : `${config.baseUrl}/${slug}`;
 }
 
-/** Mini App to'lov sahifasi */
 export function paymentAppUrl(invitationId: string): string {
   return `${config.baseUrl}/pay/${invitationId}`;
 }
 
-/**
- * Rasmni doim nisbiy yo'l sifatida saqlaymiz — domen o'zgarsa ham ishlaydi.
- * Frontend va API bir domen (Vercel) bo'lgani uchun `/api/photo/...` yetarli.
- */
+export function shopMenuUrl(): string {
+  return `${config.baseUrl}/pay`;
+}
+
 export function photoUrl(fileId: string): string {
   return `/api/photo/${fileId}`;
 }
@@ -125,9 +149,8 @@ export function formatCardDisplay(digits: string): string {
 }
 
 export function getPayMethod(method: string): PayCardInfo | null {
-  const key = String(method || '').toLowerCase();
-  if (key === 'uzcard') return config.payCards.uzcard;
-  if (key === 'humo') return config.payCards.humo;
-  if (key === 'bankomat') return config.payCards.bankomat;
+  const cards = getPayCards();
+  const key = String(method || '').toLowerCase() as PayMethodId;
+  if (key in cards) return cards[key];
   return null;
 }

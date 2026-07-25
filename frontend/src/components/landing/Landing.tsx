@@ -13,7 +13,7 @@ import {
 import { FaTelegramPlane, FaInstagram } from 'react-icons/fa';
 
 const BOT = 'https://t.me/ceremony_invit_bot';
-const CONTACT = 'https://t.me/Amirxonn_uz';
+const CONTACT = 'https://t.me/elnox_uz';
 
 // Har shablon uchun namuna (portfolio demo) havolasi
 const DEMO_FOR: Record<string, string> = {
@@ -232,7 +232,7 @@ export default function Landing() {
           <a href={CONTACT} target="_blank" rel="noopener noreferrer">Murojaat</a>
         </div>
         <p style={{ fontSize: 14, color: '#b9ad97', marginBottom: 4 }}>
-          Murojaat uchun: <a href={CONTACT} target="_blank" rel="noopener noreferrer" style={{ color: '#e7cfa6' }}>@Amirxonn_uz</a>
+          Murojaat uchun: <a href={CONTACT} target="_blank" rel="noopener noreferrer" style={{ color: '#e7cfa6' }}>@elnox_uz</a>
         </p>
         <div style={{ display: 'flex', gap: 16, justifyContent: 'center', fontSize: 20, color: '#c9a36b' }}>
           <a href={CONTACT} target="_blank" rel="noopener noreferrer" aria-label="Telegram"><FaTelegramPlane /></a>

@@ -2,7 +2,7 @@
  * Production sozlash:
  *   node scripts/telegram-setup.js
  * - webhook
- * - MenuButton WebApp (SHOP) — input chapidagi tugma
+ * - default MenuButton = commands (SHOP faqat to'lovda, per-user yoqiladi)
  * - bot commands
  */
 const path = require('path');
@@ -13,7 +13,6 @@ dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 const token = process.env.BOT_TOKEN;
 const baseUrl = (process.env.BASE_URL || '').trim().replace(/\/$/, '');
 const webhookUrl = (process.env.WEBHOOK_URL || `${baseUrl}/api/bot`).trim();
-const shopUrl = `${baseUrl}/pay`;
 
 function fail(message) {
   console.error(message);
@@ -34,7 +33,7 @@ async function telegram(method, body) {
 
 (async () => {
   if (!/^https:\/\//.test(baseUrl)) {
-    fail('BASE_URL https bo‘lishi kerak (masalan https://invit-silk.vercel.app)');
+    fail('BASE_URL https bo‘lishi kerak');
   }
 
   await telegram('setWebhook', {
@@ -44,15 +43,11 @@ async function telegram(method, body) {
   });
   console.log('Webhook:', webhookUrl);
 
-  // Chap pastki burchakdagi Menu Button → Mini App SHOP
+  // Global default: SHOP YO'Q (faqat to'lov bosqichida per-chat yoqiladi)
   await telegram('setChatMenuButton', {
-    menu_button: {
-      type: 'web_app',
-      text: 'SHOP',
-      web_app: { url: shopUrl },
-    },
+    menu_button: { type: 'commands' },
   });
-  console.log('MenuButton SHOP →', shopUrl);
+  console.log('Default menu: commands (SHOP yashirin)');
 
   await telegram('setMyCommands', {
     commands: [
@@ -66,5 +61,9 @@ async function telegram(method, body) {
 
   const info = await telegram('getWebhookInfo', {});
   console.log('Webhook info:', info.url || '(empty)', '| errors:', info.last_error_message || 'none');
+
+  const card = (process.env.PAY_UZCARD_NUMBER || '').replace(/\D/g, '');
+  console.log('PAY_UZCARD configured:', card.length >= 16 ? `yes (****${card.slice(-4)})` : 'NO — Vercel env tekshiring!');
+  console.log('ADMIN_TELEGRAM_IDS:', process.env.ADMIN_TELEGRAM_IDS || '(empty)');
   console.log('✅ Tayyor');
 })().catch((e) => fail(e.message));

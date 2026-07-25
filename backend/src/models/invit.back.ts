@@ -18,7 +18,7 @@ export type PaymentStatus =
   | 'expired'
   | 'cancelled';
 
-export type PaymentMethod = 'uzcard' | 'humo' | 'bankomat' | '';
+export type PaymentMethod = 'uzcard' | 'humo' | 'bankomat' | 'international' | '';
 
 export interface IInvitation extends Document {
   slug: string;
@@ -93,7 +93,7 @@ const invitationSchema = new Schema<IInvitation>(
     },
     paymentMethod: {
       type: String,
-      enum: ['uzcard', 'humo', 'bankomat', ''],
+      enum: ['uzcard', 'humo', 'bankomat', 'international', ''],
       default: '',
     },
     paymentAmount: { type: Number, default: 0 },
