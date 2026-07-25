@@ -9,6 +9,7 @@ import Countdown from '../../shared/Countdown';
 import Reveal from '../../shared/Reveal';
 import { OrnamentDivider, CornerFlourish } from '../../shared/Ornament';
 import ScrollHint from '../../shared/ScrollHint';
+import { resolvePhotos } from '../../utils/photoUrl';
 
 const MUSIC_SRC = '/audio/wedding-premium.m4a';
 
@@ -24,7 +25,8 @@ const particles = Array.from({ length: 22 }, (_, i) => ({
 const PremiumTemplate: React.FC<TemplateProps> = ({ data }) => {
   const { audioRef, isPlaying, toggle } = useBackgroundMusic(MUSIC_SRC);
   const parsed = parseWeddingDate(data.date);
-  const heroPhoto = data.photos && data.photos[0];
+  const photos = resolvePhotos(data.photos);
+  const heroPhoto = photos[0];
 
   return (
     <div className="tpl-premium">
@@ -112,12 +114,12 @@ const PremiumTemplate: React.FC<TemplateProps> = ({ data }) => {
       </Reveal>
 
       {/* ===== Rasmlar (bo'lsa) ===== */}
-      {data.photos && data.photos.length > 0 && (
+      {photos.length > 0 && (
         <Reveal className="pt-2 pb-4" variant="fade">
           <p className="text-center mb-3 tracking-[5px] uppercase text-[12px] text-[#c9a36b]">
             Biz haqimizda
           </p>
-          <PhotoGallery photos={data.photos} accent="#c9a36b" />
+          <PhotoGallery photos={photos} accent="#c9a36b" />
         </Reveal>
       )}
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { resolvePhotos } from '../utils/photoUrl';
 
 interface Props {
   photos: string[];
@@ -16,7 +17,7 @@ interface Props {
  *  - 3 rasm  -> bitta katta + ikkita kichik
  */
 const PhotoGallery: React.FC<Props> = ({ photos, accent = '#c9a36b', className = '' }) => {
-  const list = (photos || []).map((p) => String(p || '').trim()).filter(Boolean).slice(0, 3);
+  const list = resolvePhotos(photos);
   const n = list.length;
 
   if (n === 0) return null; // bo'sh joy ochilmaydi

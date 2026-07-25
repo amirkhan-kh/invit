@@ -10,7 +10,8 @@ import {
 import { downloadTelegramPhoto } from '../services/photo.service';
 import { Invitation, TEMPLATE_PRICES, TemplateId } from '../models/invit.back';
 import { makeSlug } from '../utils/format';
-import { config, invitationLink } from '../config';
+import { config, paymentAppUrl } from '../config';
+import { normalizePhotoList } from '../utils/photo-url';
 
 const TEMPLATE_LABELS: Record<TemplateId, string> = {
   standard: 'Standart',
@@ -206,28 +207,33 @@ export const createScene = new Scenes.WizardScene<MyContext>(
         address: s.address || '', // faqat xaritadan (venue) kelsa to'ladi, aks holda bo'sh
         mapLink: s.mapLink,
         inviteText: s.inviteText,
-        photos: s.photos || [],
+        photos: normalizePhotoList(s.photos || []),
         price: TEMPLATE_PRICES[templateId],
+        paymentStatus: 'unpaid',
+        paymentAmount: TEMPLATE_PRICES[templateId],
         telegramUserId: ctx.from?.id,
         telegramUsername: ctx.from?.username || '',
       });
 
       const price = TEMPLATE_PRICES[templateId].toLocaleString('ru-RU');
+      const payUrl = paymentAppUrl(String(inv._id));
+      // Havola FAQAT to'lovdan keyin yuboriladi (sendSuccess / admin confirm).
       await ctx.reply(
-        `🎉 *Taklifnoma tayyor!*\n\n` +
+        `🎉 *Taklifnoma tayyor — to'lov kutilmoqda*\n\n` +
           `👰 ${inv.wife} & 🤵 ${inv.husband}\n` +
           `📅 ${inv.date}\n` +
           `🏛 ${inv.venueName}\n` +
           (inv.address ? `📍 ${inv.address}\n` : '') +
           `🖼 Shablon: ${TEMPLATE_LABELS[templateId]}\n` +
           `🖼 Rasmlar: ${(inv.photos || []).length} ta\n\n` +
-          `🔗 Havola: \`${invitationLink(inv.slug, inv.templateId)}\`\n` +
-          `_(havola to'lovdan so'ng faollashadi)_\n\n` +
-          `💳 Narxi: *${price} so'm*`,
+          `💳 Narxi: *${price} so'm*\n\n` +
+          `⬇️ *SHOP / To'lov* tugmasini bosing.\n` +
+          `HUMO yoki UZCARD orqali o'tkazma qiling.\n` +
+          `✅ To'lov tasdiqlangach *shaxsiy havola* yuboriladi.`,
         {
           parse_mode: 'Markdown',
           ...Markup.inlineKeyboard([
-            [Markup.button.callback(`💳 To'lov qilish (${price} so'm)`, `pay_${inv._id}`)],
+            [Markup.button.webApp(`🛒 SHOP — To'lov (${price} so'm)`, payUrl)],
           ]),
         }
       );

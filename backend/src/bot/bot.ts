@@ -1,13 +1,19 @@
 import { Telegraf, Scenes, session, Markup } from 'telegraf';
 import fs from 'fs';
 import path from 'path';
-import { config } from '../config';
+import { config, paymentAppUrl } from '../config';
 import { MyContext } from './context';
 import { createScene } from './create.scene';
-import { paymentScene } from './payment.scene';
+import { paymentScene, paymentStatusText } from './payment.scene';
 import { mongoSessionStore } from './session-store';
-import { TemplateId, TEMPLATE_PRICES } from '../models/invit.back';
+import { Invitation, TemplateId, TEMPLATE_PRICES } from '../models/invit.back';
 import { writeBotError, writeBotLog } from '../services/bot-log.service';
+import {
+  adminConfirmPayment,
+  adminRejectPayment,
+  isAdmin,
+  notifyUserPaid,
+} from '../services/card-payment.service';
 
 const TEMPLATES: { id: TemplateId; label: string; desc: string }[] = [
   { id: 'standard', label: '🌿 Standart', desc: 'Sodda va nafis — yengil animatsiya, fon musiqasi, countdown va xarita.' },
@@ -15,7 +21,6 @@ const TEMPLATES: { id: TemplateId; label: string; desc: string }[] = [
   { id: 'premium', label: '👑 Premium', desc: "Eng hashamatli — oltin animatsiyalar, kinematografik dizayn, barcha imkoniyat." },
 ];
 
-// Har shablon uchun jonli namuna (portfolio demo) havolasi
 const DEMO_FOR: Record<TemplateId, string> = {
   standard: 'jasurnigora',
   medium: 'azizmalika',
@@ -25,14 +30,11 @@ const SUPPORT_USERNAME_MD = '@Amirxonn\\_uz';
 
 /**
  * Botni to'liq sozlab qaytaradi (launch QILMAYDI).
- * - Lokalда: bot-app.ts uni polling bilan ishga tushiradi.
- * - Vercel'da: app.ts uni webhook (bot.webhookCallback) orqali ishlatadi.
  */
 export function createBot(): Telegraf<MyContext> {
   const bot = new Telegraf<MyContext>(config.botToken);
 
   const stage = new Scenes.Stage<MyContext>([createScene, paymentScene]);
-  // Sessiya MongoDB'da (serverless'da ham, polling'da ham ishlaydi)
   bot.use(session({ store: mongoSessionStore }));
 
   bot.use(async (ctx, next) => {
@@ -70,6 +72,14 @@ export function createBot(): Telegraf<MyContext> {
   }
 
   async function sendStartMenu(ctx: MyContext) {
+    // Deep link: /start pay_<invitationId>
+    const payload = (ctx as any).startPayload || '';
+    if (typeof payload === 'string' && payload.startsWith('pay_')) {
+      const invitationId = payload.slice(4);
+      await ctx.scene.enter('payment_scene', { invitationId });
+      return;
+    }
+
     await ctx.reply(
       `✨ *Assalomu alaykum!* ✨\n\n` +
         `Men — *baxt.uz* to'y taklifnomalari botiman 💍\n` +
@@ -102,10 +112,12 @@ export function createBot(): Telegraf<MyContext> {
     }
   }
 
-  // /start va /restart har doim joriy wizard/sessionni tozalab, menyuni qayta ochadi.
-  // Bu middleware stage'dan oldin turishi kerak, aks holda command scene ichida input bo'lib qoladi.
   bot.command(['start', 'restart'], async (ctx) => {
     resetSession(ctx);
+    // Telegraf start payload
+    const text = (ctx.message as any)?.text || '';
+    const parts = text.split(/\s+/);
+    if (parts[1]) (ctx as any).startPayload = parts[1];
     await sendStartMenu(ctx);
   });
 
@@ -114,20 +126,114 @@ export function createBot(): Telegraf<MyContext> {
     await ctx.reply("Jarayon bekor qilindi. Qaytadan boshlash uchun /start bosing.", Markup.removeKeyboard());
   });
 
+  // Admin: /pending — kutilayotgan to'lovlar
+  bot.command('pending', async (ctx) => {
+    if (!ctx.from || !isAdmin(ctx.from.id)) {
+      return ctx.reply('Faqat admin uchun.');
+    }
+    const list = await Invitation.find({ paymentStatus: 'pending_review' })
+      .sort({ paymentDeclaredAt: 1 })
+      .limit(20);
+    if (!list.length) return ctx.reply('✅ Kutilayotgan to‘lov yo‘q.');
+    for (const inv of list) {
+      const amount = (inv.paymentAmount || inv.price).toLocaleString('ru-RU');
+      await ctx.reply(
+        `⏳ ${inv.wife} & ${inv.husband}\n` +
+          `${inv.templateId} · ${amount} so'm · ${inv.paymentMethod}\n` +
+          `ID: ${inv._id}`,
+        Markup.inlineKeyboard([
+          [
+            Markup.button.callback('✅', `adm_ok_${inv._id}`),
+            Markup.button.callback('❌', `adm_no_${inv._id}`),
+          ],
+        ])
+      );
+    }
+  });
+
   bot.use(stage.middleware());
 
-  // Shablon tanlandi -> ma'lumot yig'ish ssenariysiga o'tamiz
   bot.action(/^tpl_(standard|medium|premium)$/, async (ctx) => {
     await ctx.answerCbQuery();
     const id = ctx.match[1] as TemplateId;
     await ctx.scene.enter('create_invitation', { templateId: id });
   });
 
-  // To'lov tugmasi -> to'lov ssenariysi
   bot.action(/^pay_(.+)$/, async (ctx) => {
     await ctx.answerCbQuery();
     const invitationId = ctx.match[1];
     await ctx.scene.enter('payment_scene', { invitationId });
+  });
+
+  bot.action(/^paystatus_(.+)$/, async (ctx) => {
+    const invitationId = ctx.match[1];
+    const text = await paymentStatusText(invitationId);
+    await ctx.answerCbQuery();
+    await ctx.reply(text, {
+      ...Markup.inlineKeyboard([
+        [Markup.button.webApp("🛒 SHOP — To'lov", paymentAppUrl(invitationId))],
+      ]),
+    });
+  });
+
+  // Admin tasdiq / rad
+  bot.action(/^adm_ok_(.+)$/, async (ctx) => {
+    if (!ctx.from || !isAdmin(ctx.from.id)) {
+      await ctx.answerCbQuery('Faqat admin', { show_alert: true });
+      return;
+    }
+    const id = ctx.match[1];
+    const result = await adminConfirmPayment(id, ctx.from.username || String(ctx.from.id));
+    if (result.ok === false) {
+      await ctx.answerCbQuery(result.error, { show_alert: true });
+      return;
+    }
+    await ctx.answerCbQuery('Tasdiqlandi ✅');
+    try {
+      await notifyUserPaid(result.inv);
+    } catch (e) {
+      console.error(e);
+    }
+    try {
+      await ctx.editMessageText(
+        (ctx.callbackQuery.message as any)?.text + '\n\n✅ Tasdiqlandi',
+        { parse_mode: undefined }
+      );
+    } catch {
+      await ctx.reply(`✅ ${result.inv.slug} tasdiqlandi.`);
+    }
+  });
+
+  bot.action(/^adm_no_(.+)$/, async (ctx) => {
+    if (!ctx.from || !isAdmin(ctx.from.id)) {
+      await ctx.answerCbQuery('Faqat admin', { show_alert: true });
+      return;
+    }
+    const id = ctx.match[1];
+    const result = await adminRejectPayment(id, 'Admin rad etdi');
+    if (result.ok === false) {
+      await ctx.answerCbQuery(result.error, { show_alert: true });
+      return;
+    }
+    await ctx.answerCbQuery('Rad etildi');
+    try {
+      await ctx.telegram.sendMessage(
+        result.inv.telegramUserId,
+        "❌ To'lovingiz tasdiqlanmadi. Qaytadan urinib ko'ring yoki @Amirxonn_uz ga yozing.",
+        Markup.inlineKeyboard([
+          [Markup.button.webApp("💳 Qayta to'lov", paymentAppUrl(String(result.inv._id)))],
+        ])
+      );
+    } catch (e) {
+      console.error(e);
+    }
+    try {
+      await ctx.editMessageText(
+        ((ctx.callbackQuery.message as any)?.text || '') + '\n\n❌ Rad etildi'
+      );
+    } catch {
+      /* ignore */
+    }
   });
 
   bot.help((ctx) =>
@@ -139,7 +245,6 @@ export function createBot(): Telegraf<MyContext> {
   return bot;
 }
 
-// Umumiy singleton — app.ts (webhook + rasm proxy) va api/ funksiyalari ishlatadi
 let _bot: Telegraf<MyContext> | null = null;
 export function getBot(): Telegraf<MyContext> {
   if (!_bot) _bot = createBot();

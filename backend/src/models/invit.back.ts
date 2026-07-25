@@ -9,6 +9,17 @@ export const TEMPLATE_PRICES: Record<TemplateId, number> = {
   premium: 170000,
 };
 
+/** Karta o'tkazma to'lov holati */
+export type PaymentStatus =
+  | 'unpaid'
+  | 'awaiting_transfer'
+  | 'pending_review'
+  | 'paid'
+  | 'expired'
+  | 'cancelled';
+
+export type PaymentMethod = 'uzcard' | 'humo' | 'bankomat' | '';
+
 export interface IInvitation extends Document {
   slug: string;
   templateId: TemplateId;
@@ -24,11 +35,21 @@ export interface IInvitation extends Document {
   inviteText: string;
   footerWish?: string;
 
-  photos: string[]; // 0..3 ta rasm yo'li (/uploads/..)
+  photos: string[]; // 0..3 ta — /api/photo/<id>
 
   isPaid: boolean;
-  price: number; // shablon narxi
-  amountPaid: number; // jami to'langan summa (qisman to'lovlar yig'indisi)
+  price: number;
+  amountPaid: number;
+
+  // --- Karta o'tkazma to'lov (Verion-style) ---
+  paymentStatus: PaymentStatus;
+  paymentMethod: PaymentMethod;
+  paymentAmount: number; // ushbu sessiya summasi (odatda price)
+  paymentExpiresAt?: Date | null;
+  paymentDeclaredAt?: Date | null;
+  paymentConfirmedAt?: Date | null;
+  paymentConfirmedBy?: string;
+  paymentNote?: string;
 
   telegramUserId: number;
   telegramUsername?: string;
@@ -57,12 +78,30 @@ const invitationSchema = new Schema<IInvitation>(
     photos: {
       type: [String],
       default: [],
-      validate: [(arr: string[]) => arr.length <= 3, 'Ko\'pi bilan 3 ta rasm'],
+      validate: [(arr: string[]) => arr.length <= 3, "Ko'pi bilan 3 ta rasm"],
     },
 
     isPaid: { type: Boolean, default: false },
     price: { type: Number, default: TEMPLATE_PRICES.medium },
     amountPaid: { type: Number, default: 0 },
+
+    paymentStatus: {
+      type: String,
+      enum: ['unpaid', 'awaiting_transfer', 'pending_review', 'paid', 'expired', 'cancelled'],
+      default: 'unpaid',
+      index: true,
+    },
+    paymentMethod: {
+      type: String,
+      enum: ['uzcard', 'humo', 'bankomat', ''],
+      default: '',
+    },
+    paymentAmount: { type: Number, default: 0 },
+    paymentExpiresAt: { type: Date, default: null },
+    paymentDeclaredAt: { type: Date, default: null },
+    paymentConfirmedAt: { type: Date, default: null },
+    paymentConfirmedBy: { type: String, default: '' },
+    paymentNote: { type: String, default: '' },
 
     telegramUserId: { type: Number, required: true, index: true },
     telegramUsername: { type: String, default: '' },

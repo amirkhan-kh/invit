@@ -29,10 +29,25 @@ git push origin main
    | `MONGO_URI` | `.env` dagi Atlas satri |
    | `BASE_URL` | Vercel bergan domen (masalan `https://invit.vercel.app`) |
    | `API_PUBLIC_URL` | **xuddi shu** Vercel domeni |
-   | `TEST_CARD` | `1234567812345678` |
+   | `TEST_CARD` | (ixtiyoriy, eski sandbox) |
+| `PAY_UZCARD_NUMBER` | Hamkorbank UZCARD raqami (faqat raqamlar) |
+| `PAY_UZCARD_HOLDER` | Karta egasi (ism familiya) |
+| `PAY_HUMO_NUMBER` | (ixtiyoriy) HUMO raqami |
+| `PAY_HUMO_HOLDER` | (ixtiyoriy) |
+| `PAY_SESSION_MINUTES` | `7` |
+| `ADMIN_TELEGRAM_IDS` | Admin Telegram user id (vergul bilan bir nechta) |
 
    > `PORT` QO'SHMANG. `BASE_URL` va `API_PUBLIC_URL` — bir xil (Vercel domeningiz).
    > Domenni birinchi deploy'dan keyin bilib olib, keyin bu 2 qiymatni yangilab **Redeploy** qiling.
+
+### To'lov oqimi (karta o'tkazma)
+
+1. Mijoz shablon yaratadi → bot **Mini App** (`/pay/<id>`) ochadi.
+2. HUMO / UZCARD tanlaydi → karta + timer → o'tkazadi → «To'lov qildim».
+3. Admin Telegramda ✅ tasdiqlaydi (`/pending` yoki tugma).
+4. Mijozga havola yuboriladi, taklifnoma ochiladi.
+
+BotFather → Bot Settings → **Domain** ga Vercel domenini qo'shing (Mini App uchun).
 
 6. **Deploy** bosing.
 

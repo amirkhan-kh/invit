@@ -1,11 +1,12 @@
 import './_style.scss';
 import { ButterflyField, Sparkles } from '../../../../shared/ui-components';
 import { parseWeddingDate } from '../../../../types/invitation.types';
+import { resolvePhotos } from '../../../../utils/photoUrl';
 
 const Intro = ({ data = {} }) => {
   const { husband = 'Kuyov', wife = 'Kelin', date = '', photos = [] } = data;
   const parsed = parseWeddingDate(date);
-  const cover = photos && photos[0];
+  const cover = resolvePhotos(photos)[0];
 
   return (
     <section id="intro" className="min-h-screen sticky top-0 z-10">

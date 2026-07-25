@@ -5,19 +5,30 @@ import type { InvitationData, TemplateId } from './types/invitation.types';
 import { makeSampleData } from './preview/sampleData';
 import { getDemo } from './preview/demoData';
 import Landing from './components/landing/Landing';
+import PayApp from './pay/PayApp';
+import { resolvePhotos } from './utils/photoUrl';
 
-// URL'ni tahlil qilamiz:
-//   /                          -> rasmiy sayt (Landing)
-//   /preview/<shablon>         -> shablon namunasi (namuna ma'lumot)
-//   /preview/<shablon>/<slug>  -> aniq taklifnoma (masalan /preview/premium/farhodshirin)
-//   /<slug>                    -> aniq taklifnoma (qisqa ko'rinish — hali ishlaydi)
+// URL:
+//   /                          -> Landing
+//   /pay/<invitationId>        -> Telegram Mini App to'lov
+//   /preview/<shablon>         -> namuna
+//   /preview/<shablon>/<slug>  -> taklifnoma
+//   /<slug>                    -> taklifnoma
 type Route =
   | { kind: 'landing' }
+  | { kind: 'pay'; invitationId: string }
+  | { kind: 'pay_menu' }
   | { kind: 'sample'; template: TemplateId }
   | { kind: 'invitation'; slug: string };
 
 function parseRoute(): Route {
   const parts = window.location.pathname.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
+  if (parts[0] === 'pay' && (!parts[1] || parts[1] === 'menu')) {
+    return { kind: 'pay_menu' };
+  }
+  if (parts[0] === 'pay' && parts[1]) {
+    return { kind: 'pay', invitationId: parts[1] };
+  }
   if (parts[0] === 'preview' && ['standard', 'medium', 'premium'].includes(parts[1])) {
     if (parts[2]) return { kind: 'invitation', slug: parts[2] };
     return { kind: 'sample', template: parts[1] as TemplateId };
@@ -26,15 +37,20 @@ function parseRoute(): Route {
   return { kind: 'landing' };
 }
 
+function withResolvedPhotos(data: InvitationData): InvitationData {
+  return { ...data, photos: resolvePhotos(data.photos) };
+}
+
 function renderTemplate(data: InvitationData) {
-  switch (data.templateId) {
+  const d = withResolvedPhotos(data);
+  switch (d.templateId) {
     case 'premium':
-      return <PremiumTemplate data={data} />;
+      return <PremiumTemplate data={d} />;
     case 'standard':
-      return <StandardTemplate data={data} />;
+      return <StandardTemplate data={d} />;
     case 'medium':
     default:
-      return <MediumTemplates data={data} />;
+      return <MediumTemplates data={d} />;
   }
 }
 
@@ -49,12 +65,11 @@ function Centered({ children }: { children: React.ReactNode }) {
 function App() {
   const route = parseRoute();
   const slug = route.kind === 'invitation' ? route.slug : '';
-  // Portfolio (Mijozlar) namuna taklifnomasi — API'siz, doimiy
   const demo = slug ? getDemo(slug) : null;
   const [result, setResult] = useState<InvitationResult | null>(null);
 
   useEffect(() => {
-    if (route.kind !== 'invitation' || demo) return; // sample/landing/demo -> API kerak emas
+    if (route.kind !== 'invitation' || demo) return;
     if (!slug) return;
     let alive = true;
     fetchInvitation(slug).then((r) => {
@@ -65,22 +80,26 @@ function App() {
     };
   }, [slug, route.kind, demo]);
 
-  // Shablon namunasi (/preview/premium)
+  if (route.kind === 'pay') {
+    return <PayApp invitationId={route.invitationId} />;
+  }
+
+  if (route.kind === 'pay_menu') {
+    return <PayApp invitationId="" mode="menu" />;
+  }
+
   if (route.kind === 'sample') {
     return <div className="invite-shell">{renderTemplate(makeSampleData(route.template))}</div>;
   }
 
-  // Bosh sahifa — rasmiy sayt
   if (route.kind === 'landing') {
     return <Landing />;
   }
 
-  // Portfolio namunasi (demo) — haqiqiy taklifnoma ko'rinishida
   if (demo) {
     return <div className="invite-shell">{renderTemplate(demo)}</div>;
   }
 
-  // Yuklanmoqda
   if (!result) {
     return (
       <Centered>
@@ -94,7 +113,7 @@ function App() {
     return (
       <Centered>
         <div className="font-script text-4xl text-[#c9a36b]">Topilmadi</div>
-        <p>Bunday taklifnoma mavjud emas yoki havola noto'g'ri.</p>
+        <p>Bunday taklifnoma mavjud emas yoki havola noto&apos;g&apos;ri.</p>
       </Centered>
     );
   }
@@ -107,7 +126,7 @@ function App() {
         </div>
         <p>Bu taklifnoma hali faollashtirilmagan.</p>
         <p className="text-sm text-gray-500">
-          To'lovni yakunlagach, havola avtomatik ochiladi.
+          To&apos;lovni yakunlagach, havola avtomatik ochiladi.
         </p>
       </Centered>
     );
@@ -122,7 +141,6 @@ function App() {
     );
   }
 
-  // Muvaffaqiyat — shablonni ko'rsatamiz
   return <div className="invite-shell">{renderTemplate(result.data)}</div>;
 }
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import './_style.scss';
+import { resolvePhotos } from '../../../../utils/photoUrl';
 
 const DEFAULT_TIMINGS = [
   { time: '07:00', label: 'Nahorgi Osh' },
@@ -21,7 +22,7 @@ const Timing = ({ data = {} }) => {
   const footerWish =
     data.footerWish ||
     "Siz aziz mehmonlarni samimiyat va iliqlik bilan kutib olamiz. Bu kunimiz siz bilan yanada go'zal va esda qolarli bo'lishiga ishonamiz.";
-  const endPhoto = data.photos && data.photos[2];
+  const endPhoto = resolvePhotos(data.photos)[2];
 
   const handleScroll = () => {
     if (lineRef.current && wrapperRef.current) {

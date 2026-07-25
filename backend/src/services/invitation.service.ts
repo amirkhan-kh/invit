@@ -1,4 +1,5 @@
 import { Invitation, IInvitation } from '../models/invit.back';
+import { normalizePhotoList } from '../utils/photo-url';
 
 // To'y sanasidan 2 kun o'tgach taklifnoma "muddati tugagan" -> 404 (slug bo'shaydi)
 const EXPIRE_AFTER_MS = 2 * 24 * 60 * 60 * 1000;
@@ -22,6 +23,7 @@ export async function lookupInvitation(slug: string): Promise<InvitationLookup> 
   if (!inv) return { status: 404 };
   if (isExpired(inv.date)) return { status: 404 };
   if (!inv.isPaid) return { status: 402, husband: inv.husband, wife: inv.wife };
-  inv.photos = (inv.photos || []).map((p) => String(p || '').trim()).filter(Boolean);
+  // Nisbiy /api/photo/... — frontend har qanday domenda to'g'ri yuklaydi
+  inv.photos = normalizePhotoList(inv.photos as string[]);
   return { status: 200, data: inv };
 }

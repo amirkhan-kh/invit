@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import './_style.scss';
 import MapButton from '../../../../shared/MapButton';
 import { parseWeddingDate } from '../../../../types/invitation.types';
+import { resolvePhotos } from '../../../../utils/photoUrl';
 
 // Berilgan oy/yil uchun kalendar kataklarini (bo'sh joylari bilan) hosil qiladi
 function buildCalendar(year, month /* 1-12 */) {
@@ -32,7 +33,7 @@ const DateSection = ({ data = {} }) => {
   const selectedDay = parsed.day ? parseInt(parsed.day, 10) : -1;
   const { cells } = buildCalendar(y, m);
 
-  const venuePhoto = photos && photos[1]; // ixtiyoriy to'yxona/juftlik rasmi
+  const venuePhoto = resolvePhotos(photos)[1]; // ixtiyoriy to'yxona/juftlik rasmi
 
   useEffect(() => {
     const observer = new IntersectionObserver(

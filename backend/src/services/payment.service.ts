@@ -71,6 +71,8 @@ export async function applyPayment(invitationId: string, amount: number): Promis
 
   if (inv.amountPaid >= inv.price) {
     inv.isPaid = true;
+    inv.paymentStatus = 'paid';
+    inv.paymentConfirmedAt = new Date();
     await inv.save();
     return {
       isPaid: true,
@@ -103,6 +105,9 @@ export async function payWithTestCard(invitationId: string): Promise<PaymentResu
   if (!inv) throw new Error('Taklifnoma topilmadi');
   inv.amountPaid = inv.price;
   inv.isPaid = true;
+  inv.paymentStatus = 'paid';
+  inv.paymentConfirmedAt = new Date();
+  inv.paymentConfirmedBy = 'test_card';
   await inv.save();
   return {
     isPaid: true,
