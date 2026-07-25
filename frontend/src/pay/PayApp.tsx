@@ -5,7 +5,6 @@ import {
   declarePay,
   fetchMyPaySession,
   fetchPaySession,
-  freeTestPayApi,
   startPay,
 } from './api';
 import type { PaySession } from './types';
@@ -221,29 +220,6 @@ export default function PayApp({
     }
   }
 
-  async function onFreeTest() {
-    if (busy || !payId) return;
-    setBusy(true);
-    setError('');
-    try {
-      const s = await freeTestPayApi(payId);
-      setSession(s);
-      haptic('success');
-      setTimeout(() => {
-        try {
-          window.Telegram?.WebApp?.close();
-        } catch {
-          /* ignore */
-        }
-      }, 2000);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Xato');
-      haptic('error');
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function onCopyAmount() {
     const amt = String(session?.amount ?? '');
     if (!amt) return;
@@ -332,7 +308,7 @@ export default function PayApp({
     );
   }
 
-  // Tekshiruvda (faqat live + autoConfirm o'chiq)
+  // Real: admin kartaga pul tushganini ko'rib tasdiqlaydi
   if (session.paymentStatus === 'pending_review') {
     return (
       <div className="pay-app">
@@ -341,20 +317,17 @@ export default function PayApp({
           <div className="icon">⏳</div>
           <h2>Tekshiruvda</h2>
           <p>
-            O&apos;tkazma qabul qilindi.
+            O&apos;tkazmangiz qabul qilindi.
             <br />
-            Tez orada tasdiqlanadi.
+            Kartaga pul tushishi tasdiqlangach
+            <br />
+            taklifnoma havolasi yuboriladi.
             <br />
             <strong style={{ color: '#8eb6ff' }}>{fmt(session.amount)} so&apos;m</strong>
           </p>
           <button type="button" className="pay-btn blue" onClick={() => load()} disabled={busy}>
             Holatni yangilash
           </button>
-          {(session.testMode || session.autoConfirm) && (
-            <button type="button" className="pay-btn primary" onClick={onFreeTest} disabled={busy}>
-              Sinov: darhol tasdiqlash
-            </button>
-          )}
         </div>
       </div>
     );
@@ -375,14 +348,6 @@ export default function PayApp({
               🎧 Yordam
             </a>
           </div>
-
-          {session.testMode && (
-            <div className="pay-test-banner">
-              🧪 <b>Test rejim</b>: summa {fmt(session.amount)} so&apos;m (katalog:{' '}
-              {fmt(session.catalogPrice || session.amount)}).
-              Real pul yubormasdan «Sinov to&apos;lov» yoki «To&apos;lov qildim» bosing — darhol tasdiqlanadi.
-            </div>
-          )}
 
           <div className="pay-amount-hero">
             <div className="lbl">AYNAN shu summani o&apos;tkazing</div>
@@ -427,14 +392,8 @@ export default function PayApp({
           </ul>
 
           <button type="button" className="pay-btn primary" onClick={onDeclare} disabled={busy}>
-            {busy ? '...' : session.autoConfirm ? '✓ To\'lov qildim — tasdiqlash' : '✓ To\'lov qildim'}
+            {busy ? '...' : "✓ To'lov qildim"}
           </button>
-
-          {session.testMode && (
-            <button type="button" className="pay-btn blue" onClick={onFreeTest} disabled={busy}>
-              🧪 Sinov to&apos;lov (pul yubormasdan)
-            </button>
-          )}
 
           <button type="button" className="pay-btn ghost" onClick={onCancel} disabled={busy}>
             To&apos;lovni bekor qilish
@@ -454,7 +413,7 @@ export default function PayApp({
         <div className="pay-label">To&apos;lov</div>
         <div className="pay-balance-card">
           <div style={{ fontSize: 13, color: '#9eb0cc' }}>To&apos;lanadigan summa</div>
-          <div className="amt">{fmt(session.amount)} so&apos;m</div>
+          <div className="amt">{fmt(session.catalogPrice || session.amount)} so&apos;m</div>
           <div className="sub">
             {session.husband} &amp; {session.wife}
             <br />
@@ -466,12 +425,6 @@ export default function PayApp({
           <span>Shablon: {session.templateLabel}</span>
           <span className="price">{fmt(session.catalogPrice || session.amount)} so&apos;m</span>
         </div>
-
-        {session.testMode && (
-          <div className="pay-test-banner" style={{ marginTop: 10 }}>
-            🧪 Test rejim yoqilgan. Usul tanlang → «Sinov to&apos;lov» — pul ketmaydi, havola keladi.
-          </div>
-        )}
 
         <div className="pay-label">To&apos;lov usuli</div>
         <div className="pay-methods">

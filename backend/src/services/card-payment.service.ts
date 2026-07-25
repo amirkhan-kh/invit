@@ -101,8 +101,8 @@ export function publicSession(
     productTitle: `Taklifnoma — ${TEMPLATE_LABELS[inv.templateId] || inv.templateId}`,
     amount,
     catalogPrice: inv.price || TEMPLATE_PRICES[inv.templateId] || 0,
-    testMode: config.payTestMode,
-    autoConfirm: config.payAutoConfirm || config.payTestMode,
+    testMode: false,
+    autoConfirm: config.payAutoConfirm,
     currency: 'UZS',
     isPaid: !!inv.isPaid,
     paymentStatus: inv.isPaid ? 'paid' : inv.paymentStatus || 'unpaid',
@@ -160,15 +160,8 @@ export async function getInvitationForPay(
 }
 
 function transferAmountFor(inv: IInvitation): number {
-  const base = inv.price || TEMPLATE_PRICES[inv.templateId] || 0;
-  // Test rejim: 1..8 so'm (pulsiz sinash / mikro o'tkazma)
-  if (config.payTestMode) {
-    const max = config.payTestAmountMax;
-    // invitation id dan barqaror 1..max (har sessiya yangilanganda random)
-    return 1 + Math.floor(Math.random() * max);
-  }
-  // Live: aniq narx (keyinroq unique suffix qo'shish mumkin)
-  return base;
+  // Real to'lov: shablon narxi (premium = 2000 va h.k.)
+  return inv.price || TEMPLATE_PRICES[inv.templateId] || 0;
 }
 
 export async function startTransferSession(
@@ -197,7 +190,7 @@ export async function startTransferSession(
   }
 
   inv.paymentMethod = method as PaymentMethod;
-  inv.paymentNote = config.payTestMode ? 'test_mode' : '';
+  inv.paymentNote = '';
   inv.paymentAmount = transferAmountFor(inv);
   inv.paymentStatus = 'awaiting_transfer';
   inv.paymentExpiresAt = new Date(Date.now() + config.paySessionMinutes * 60 * 1000);
@@ -205,31 +198,6 @@ export async function startTransferSession(
   await inv.save();
 
   return { ok: true, session: publicSession(inv, merchant) };
-}
-
-/**
- * Pulsiz sinov — karta o'tkazmasiz darhol tasdiqlash (faqat test rejimida).
- */
-export async function freeTestPay(
-  invitationId: string,
-  telegramUserId: number
-): Promise<{ ok: true; session: PaymentSessionView } | { ok: false; error: string }> {
-  if (!config.payTestMode && !config.payAutoConfirm) {
-    return { ok: false, error: 'Test rejim o‘chiq' };
-  }
-  const inv = await getInvitationForPay(invitationId, telegramUserId);
-  if (!inv) return { ok: false, error: 'Taklifnoma topilmadi yoki ruxsat yo‘q' };
-  if (inv.isPaid) {
-    return { ok: true, session: await publicSessionAsync(inv) };
-  }
-  const result = await adminConfirmPayment(String(inv._id), 'test_free');
-  if (result.ok === false) return { ok: false, error: result.error };
-  try {
-    await notifyUserPaid(result.inv);
-  } catch (e) {
-    console.error(e);
-  }
-  return { ok: true, session: await publicSessionAsync(result.inv) };
 }
 
 export async function declareTransferPaid(
@@ -262,13 +230,13 @@ export async function declareTransferPaid(
 
   inv.paymentDeclaredAt = new Date();
 
-  // Avtomatik tasdiq (test yoki PAY_AUTO_CONFIRM) — admin kutmaydi
-  if (config.payAutoConfirm || config.payTestMode) {
+  // Real rejim: admin kartaga pul tushganini ko'rib tasdiqlaydi → link
+  if (config.payAutoConfirm) {
     inv.isPaid = true;
     inv.amountPaid = inv.price;
     inv.paymentStatus = 'paid';
     inv.paymentConfirmedAt = new Date();
-    inv.paymentConfirmedBy = config.payTestMode ? 'auto_test' : 'auto_confirm';
+    inv.paymentConfirmedBy = 'auto_confirm';
     inv.paymentExpiresAt = null;
     await inv.save();
     try {

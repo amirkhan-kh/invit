@@ -11,7 +11,6 @@ import {
   notifyAdminsPending,
   notifyUserPaid,
   abandonUnpaidInvitation,
-  freeTestPay,
   publicSessionAsync,
   startTransferSession,
   validateTelegramWebAppInitData,
@@ -103,12 +102,6 @@ router.post('/pay/:invitationId', async (req, res) => {
           console.error('Admin notify xato:', err);
         }
       }
-      return res.json(result.session);
-    }
-
-    if (action === 'test_free') {
-      const result = await freeTestPay(invitationId, auth.userId);
-      if (result.ok === false) return res.status(400).json({ message: result.error });
       return res.json(result.session);
     }
 

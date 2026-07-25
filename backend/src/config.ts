@@ -129,14 +129,13 @@ export const config = {
   adminTelegramIds: parseAdminIds(process.env.ADMIN_TELEGRAM_IDS),
 
   /**
-   * true (default) — «To'lov qildim» bosilganda darhol tasdiqlanadi (test / demo).
-   * false — admin tasdiqlashi kerak (yoki keyinroq Click/Payme webhook).
-   * Karta→karta o'tkazmani bank o'zi botga aytmaydi; avtomatik aniqlash uchun Click/Payme kerak.
+   * true — «To'lov qildim» darhol tasdiq (tavsiya etilmaydi).
+   * false (default) — real: admin kartaga pul tushganini ko'rib tasdiqlaydi → link.
    */
-  payAutoConfirm: String(process.env.PAY_AUTO_CONFIRM ?? 'true').toLowerCase() !== 'false',
+  payAutoConfirm: String(process.env.PAY_AUTO_CONFIRM ?? 'false').toLowerCase() === 'true',
 
-  /** Test rejimida ko'rsatiladigan summa diapazoni (1..N so'm) — real 170k o'rniga */
-  payTestMode: String(process.env.PAY_TEST_MODE ?? 'true').toLowerCase() !== 'false',
+  /** true — test summalar / sinov tugmalari. false (default) — real to'lov. */
+  payTestMode: String(process.env.PAY_TEST_MODE ?? 'false').toLowerCase() === 'true',
   payTestAmountMax: Math.min(99, Math.max(1, Number(process.env.PAY_TEST_AMOUNT_MAX || 8) || 8)),
 
   /** @deprecated use getPayCards() — saqlangan qulaylik uchun */

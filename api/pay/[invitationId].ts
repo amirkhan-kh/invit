@@ -7,7 +7,6 @@ import {
   adminRejectPayment,
   cancelTransferSession,
   declareTransferPaid,
-  freeTestPay,
   isAdmin,
   notifyAdminsPending,
   notifyUserPaid,
@@ -76,12 +75,6 @@ export default async function handler(req: any, res: any) {
           console.error(e);
         }
       }
-      return res.status(200).json(result.session);
-    }
-
-    if (action === 'test_free') {
-      const result = await freeTestPay(invitationId, auth.userId);
-      if (result.ok === false) return res.status(400).json({ message: result.error });
       return res.status(200).json(result.session);
     }
 
