@@ -71,3 +71,14 @@ export async function cancelPay(invitationId: string): Promise<PaySession> {
   if (!res.ok) throw new Error(await parseError(res));
   return res.json();
 }
+
+/** Pulsiz sinov — karta o'tkazmasiz darhol tasdiq */
+export async function freeTestPayApi(invitationId: string): Promise<PaySession> {
+  const res = await fetch(`/api/pay/${encodeURIComponent(invitationId)}`, {
+    method: 'POST',
+    headers: userIdHeader(),
+    body: JSON.stringify({ action: 'test_free', initData: initData() }),
+  });
+  if (!res.ok) throw new Error(await parseError(res));
+  return res.json();
+}

@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { cancelPay, declarePay, fetchMyPaySession, fetchPaySession, startPay } from './api';
+import {
+  cancelPay,
+  declarePay,
+  fetchMyPaySession,
+  fetchPaySession,
+  freeTestPayApi,
+  startPay,
+} from './api';
 import type { PaySession } from './types';
 import './PayApp.scss';
 
@@ -37,6 +44,7 @@ export default function PayApp({
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedAmt, setCopiedAmt] = useState(false);
   const [remaining, setRemaining] = useState(0);
 
   const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
@@ -164,11 +172,57 @@ export default function PayApp({
       const s = await declarePay(payId);
       setSession(s);
       haptic('success');
+      if (s.isPaid || s.paymentStatus === 'paid') {
+        // Muvaffaqiyat — biroz ko'rsatib Mini App yopiladi
+        setTimeout(() => {
+          try {
+            window.Telegram?.WebApp?.close();
+          } catch {
+            /* ignore */
+          }
+        }, 2500);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Xato');
       haptic('error');
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function onFreeTest() {
+    if (busy || !payId) return;
+    setBusy(true);
+    setError('');
+    try {
+      const s = await freeTestPayApi(payId);
+      setSession(s);
+      haptic('success');
+      setTimeout(() => {
+        try {
+          window.Telegram?.WebApp?.close();
+        } catch {
+          /* ignore */
+        }
+      }, 2000);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Xato');
+      haptic('error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onCopyAmount() {
+    const amt = String(session?.amount ?? '');
+    if (!amt) return;
+    try {
+      await navigator.clipboard.writeText(amt);
+      setCopiedAmt(true);
+      haptic('success');
+      setTimeout(() => setCopiedAmt(false), 2000);
+    } catch {
+      /* ignore */
     }
   }
 
@@ -220,9 +274,17 @@ export default function PayApp({
             {session.husband} &amp; {session.wife}
             <br />
             Taklifnoma faollashtirildi.
+            <br />
+            <span style={{ fontSize: 12, opacity: 0.7 }}>Havola Telegram chatga yuborildi…</span>
           </p>
           {session.invitationUrl && (
-            <a className="pay-btn blue" href={session.invitationUrl} style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
+            <a
+              className="pay-btn blue"
+              href={session.invitationUrl}
+              style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}
+              target="_blank"
+              rel="noreferrer"
+            >
               Taklifnomani ochish
             </a>
           )}
@@ -234,7 +296,7 @@ export default function PayApp({
     );
   }
 
-  // Tekshiruvda
+  // Tekshiruvda (faqat live + autoConfirm o'chiq)
   if (session.paymentStatus === 'pending_review') {
     return (
       <div className="pay-app">
@@ -243,35 +305,62 @@ export default function PayApp({
           <div className="icon">⏳</div>
           <h2>Tekshiruvda</h2>
           <p>
-            To&apos;lovingiz qabul qilindi.
+            O&apos;tkazma qabul qilindi.
             <br />
-            Admin tasdiqlagach, havola Telegramga yuboriladi.
+            Tez orada tasdiqlanadi.
             <br />
             <strong style={{ color: '#8eb6ff' }}>{fmt(session.amount)} so&apos;m</strong>
           </p>
           <button type="button" className="pay-btn blue" onClick={() => load()} disabled={busy}>
             Holatni yangilash
           </button>
+          {(session.testMode || session.autoConfirm) && (
+            <button type="button" className="pay-btn primary" onClick={onFreeTest} disabled={busy}>
+              Sinov: darhol tasdiqlash
+            </button>
+          )}
         </div>
       </div>
     );
   }
 
-  // Karta o'tkazma ekrani
+  // Karta o'tkazma ekrani (Verion uslubi)
   if (session.paymentStatus === 'awaiting_transfer' && session.card && remaining > 0) {
     return (
       <div className="pay-app">
         <Header name={displayName} username={username} />
         {error && <div className="pay-error">{error}</div>}
         <div className="pay-section">
-          <div className="pay-amount-line">
-            <span>To&apos;lov summasi</span>
-            <strong>{fmt(session.amount)} so&apos;m</strong>
+          <div className="pay-warn-row">
+            <div className="pay-warn">
+              ⚠️ Diqqat! Faqat ko&apos;rsatilgan summani yuboring
+            </div>
+            <a className="pay-help-mini" href="https://t.me/elnox_uz" target="_blank" rel="noreferrer">
+              🎧 Yordam
+            </a>
+          </div>
+
+          {session.testMode && (
+            <div className="pay-test-banner">
+              🧪 <b>Test rejim</b>: summa {fmt(session.amount)} so&apos;m (katalog:{' '}
+              {fmt(session.catalogPrice || session.amount)}).
+              Real pul yubormasdan «Sinov to&apos;lov» yoki «To&apos;lov qildim» bosing — darhol tasdiqlanadi.
+            </div>
+          )}
+
+          <div className="pay-amount-hero">
+            <div className="lbl">AYNAN shu summani o&apos;tkazing</div>
+            <div className="row">
+              <span className="big">{fmt(session.amount)} so&apos;m</span>
+              <button type="button" className="icon-btn" onClick={onCopyAmount} title="Nusxa">
+                {copiedAmt ? '✓' : '📋'}
+              </button>
+            </div>
           </div>
 
           <div className="pay-timer-bar">
             <div className="pay-timer-row">
-              <span>Karta amal qiladi</span>
+              <span>⏱ Karta amal qiladi</span>
               <span className="t">{fmtTime(remaining)}</span>
             </div>
             <div className="pay-progress">
@@ -282,7 +371,6 @@ export default function PayApp({
           <div className="pay-card-box">
             <div>
               <span className="badge">{session.card.label}</span>
-              <span style={{ fontSize: 12, opacity: 0.9 }}>Hamkor bank</span>
             </div>
             <div className="num">{session.card.numberDisplay}</div>
             <div className="holder">{session.card.holder}</div>
@@ -297,14 +385,21 @@ export default function PayApp({
             <li className="no">Faqat ko&apos;rsatilgan kartaga</li>
             <li className="no">
               {session.card.method === 'bankomat'
-                ? 'Bankomat/terminal orqali to‘ldirish mumkin'
-                : 'Faqat kartadan kartaga (bankomat orqali emas)'}
+                ? 'Bankomat/terminal orqali mumkin'
+                : 'Faqat kartadan kartaga'}
             </li>
           </ul>
 
           <button type="button" className="pay-btn primary" onClick={onDeclare} disabled={busy}>
-            {busy ? '...' : '✓ To\'lov qildim'}
+            {busy ? '...' : session.autoConfirm ? '✓ To\'lov qildim — tasdiqlash' : '✓ To\'lov qildim'}
           </button>
+
+          {session.testMode && (
+            <button type="button" className="pay-btn blue" onClick={onFreeTest} disabled={busy}>
+              🧪 Sinov to&apos;lov (pul yubormasdan)
+            </button>
+          )}
+
           <button type="button" className="pay-btn ghost" onClick={onCancel} disabled={busy}>
             To&apos;lovni bekor qilish
           </button>
@@ -333,8 +428,14 @@ export default function PayApp({
 
         <div className="pay-product">
           <span>Shablon: {session.templateLabel}</span>
-          <span className="price">{fmt(session.amount)} so&apos;m</span>
+          <span className="price">{fmt(session.catalogPrice || session.amount)} so&apos;m</span>
         </div>
+
+        {session.testMode && (
+          <div className="pay-test-banner" style={{ marginTop: 10 }}>
+            🧪 Test rejim yoqilgan. Usul tanlang → «Sinov to&apos;lov» — pul ketmaydi, havola keladi.
+          </div>
+        )}
 
         <div className="pay-label">To&apos;lov usuli</div>
         <div className="pay-methods">

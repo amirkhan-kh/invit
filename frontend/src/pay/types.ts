@@ -18,6 +18,9 @@ export interface PaySession {
   productKind: string;
   productTitle: string;
   amount: number;
+  catalogPrice?: number;
+  testMode?: boolean;
+  autoConfirm?: boolean;
   currency: string;
   isPaid: boolean;
   paymentStatus: string;

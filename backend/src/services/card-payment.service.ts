@@ -27,6 +27,10 @@ export interface PaymentSessionView {
   productKind: ProductKind;
   productTitle: string;
   amount: number;
+  /** Shablon narxi (katalog) */
+  catalogPrice: number;
+  testMode: boolean;
+  autoConfirm: boolean;
   currency: 'UZS';
   isPaid: boolean;
   paymentStatus: string;
@@ -96,6 +100,9 @@ export function publicSession(
     productKind: 'invitation_template',
     productTitle: `Taklifnoma — ${TEMPLATE_LABELS[inv.templateId] || inv.templateId}`,
     amount,
+    catalogPrice: inv.price || TEMPLATE_PRICES[inv.templateId] || 0,
+    testMode: config.payTestMode,
+    autoConfirm: config.payAutoConfirm || config.payTestMode,
     currency: 'UZS',
     isPaid: !!inv.isPaid,
     paymentStatus: inv.isPaid ? 'paid' : inv.paymentStatus || 'unpaid',
@@ -152,6 +159,18 @@ export async function getInvitationForPay(
   return inv;
 }
 
+function transferAmountFor(inv: IInvitation): number {
+  const base = inv.price || TEMPLATE_PRICES[inv.templateId] || 0;
+  // Test rejim: 1..8 so'm (pulsiz sinash / mikro o'tkazma)
+  if (config.payTestMode) {
+    const max = config.payTestAmountMax;
+    // invitation id dan barqaror 1..max (har sessiya yangilanganda random)
+    return 1 + Math.floor(Math.random() * max);
+  }
+  // Live: aniq narx (keyinroq unique suffix qo'shish mumkin)
+  return base;
+}
+
 export async function startTransferSession(
   invitationId: string,
   method: PaymentMethod,
@@ -163,8 +182,9 @@ export async function startTransferSession(
   if (inv.isPaid || inv.paymentStatus === 'paid') {
     return { ok: true, session: publicSession(inv, merchantEarly) };
   }
-  if (inv.paymentStatus === 'pending_review') {
-    return { ok: false, error: "To'lov tekshiruvda. Iltimos, kuting." };
+  // pending_review dan ham qayta sessiya boshlash mumkin (eski "tekshiruvda" tiqilib qolmasin)
+  if (inv.paymentStatus === 'pending_review' && !config.payAutoConfirm) {
+    return { ok: false, error: "To'lov tekshiruvda. Iltimos, kuting yoki adminni chaqiring." };
   }
 
   const allowed = ['uzcard', 'humo', 'bankomat', 'international'];
@@ -177,8 +197,8 @@ export async function startTransferSession(
   }
 
   inv.paymentMethod = method as PaymentMethod;
-  inv.paymentNote = '';
-  inv.paymentAmount = inv.price || TEMPLATE_PRICES[inv.templateId];
+  inv.paymentNote = config.payTestMode ? 'test_mode' : '';
+  inv.paymentAmount = transferAmountFor(inv);
   inv.paymentStatus = 'awaiting_transfer';
   inv.paymentExpiresAt = new Date(Date.now() + config.paySessionMinutes * 60 * 1000);
   inv.paymentDeclaredAt = null;
@@ -187,33 +207,81 @@ export async function startTransferSession(
   return { ok: true, session: publicSession(inv, merchant) };
 }
 
-export async function declareTransferPaid(
+/**
+ * Pulsiz sinov — karta o'tkazmasiz darhol tasdiqlash (faqat test rejimida).
+ */
+export async function freeTestPay(
   invitationId: string,
   telegramUserId: number
 ): Promise<{ ok: true; session: PaymentSessionView } | { ok: false; error: string }> {
+  if (!config.payTestMode && !config.payAutoConfirm) {
+    return { ok: false, error: 'Test rejim o‘chiq' };
+  }
+  const inv = await getInvitationForPay(invitationId, telegramUserId);
+  if (!inv) return { ok: false, error: 'Taklifnoma topilmadi yoki ruxsat yo‘q' };
+  if (inv.isPaid) {
+    return { ok: true, session: await publicSessionAsync(inv) };
+  }
+  const result = await adminConfirmPayment(String(inv._id), 'test_free');
+  if (result.ok === false) return { ok: false, error: result.error };
+  try {
+    await notifyUserPaid(result.inv);
+  } catch (e) {
+    console.error(e);
+  }
+  return { ok: true, session: await publicSessionAsync(result.inv) };
+}
+
+export async function declareTransferPaid(
+  invitationId: string,
+  telegramUserId: number
+): Promise<
+  | { ok: true; session: PaymentSessionView; autoConfirmed: boolean }
+  | { ok: false; error: string }
+> {
   const inv = await getInvitationForPay(invitationId, telegramUserId);
   if (!inv) return { ok: false, error: 'Taklifnoma topilmadi yoki ruxsat yo‘q' };
   const merchant = await loadMerchantCard();
-  if (inv.isPaid) return { ok: true, session: publicSession(inv, merchant) };
+  if (inv.isPaid) return { ok: true, session: publicSession(inv, merchant), autoConfirmed: true };
 
   ensureNotExpired(inv);
   if (inv.paymentStatus === 'expired') {
     return { ok: false, error: "Vaqt tugadi. Yangi sessiya boshlang." };
   }
-  if (inv.paymentStatus !== 'awaiting_transfer') {
+  if (inv.paymentStatus !== 'awaiting_transfer' && inv.paymentStatus !== 'pending_review') {
     return { ok: false, error: "Avval to'lov usulini tanlang va kartaga o'tkazma qiling." };
   }
-  if (remainingSeconds(inv.paymentExpiresAt) <= 0) {
+  if (
+    inv.paymentStatus === 'awaiting_transfer' &&
+    remainingSeconds(inv.paymentExpiresAt) <= 0
+  ) {
     inv.paymentStatus = 'expired';
     await inv.save();
     return { ok: false, error: "Vaqt tugadi. Yangi sessiya boshlang." };
   }
 
-  inv.paymentStatus = 'pending_review';
   inv.paymentDeclaredAt = new Date();
-  await inv.save();
 
-  return { ok: true, session: publicSession(inv, merchant) };
+  // Avtomatik tasdiq (test yoki PAY_AUTO_CONFIRM) — admin kutmaydi
+  if (config.payAutoConfirm || config.payTestMode) {
+    inv.isPaid = true;
+    inv.amountPaid = inv.price;
+    inv.paymentStatus = 'paid';
+    inv.paymentConfirmedAt = new Date();
+    inv.paymentConfirmedBy = config.payTestMode ? 'auto_test' : 'auto_confirm';
+    inv.paymentExpiresAt = null;
+    await inv.save();
+    try {
+      await notifyUserPaid(inv);
+    } catch (e) {
+      console.error(e);
+    }
+    return { ok: true, session: publicSession(inv, merchant), autoConfirmed: true };
+  }
+
+  inv.paymentStatus = 'pending_review';
+  await inv.save();
+  return { ok: true, session: publicSession(inv, merchant), autoConfirmed: false };
 }
 
 export async function cancelTransferSession(

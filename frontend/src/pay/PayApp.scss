@@ -382,3 +382,85 @@
   color: #8b9bb8;
   font-size: 14px;
 }
+
+.pay-warn-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.pay-warn {
+  background: rgba(240, 180, 40, 0.12);
+  border: 1px solid rgba(240, 180, 40, 0.35);
+  border-radius: 14px;
+  padding: 12px;
+  font-size: 13px;
+  color: #f0d090;
+  line-height: 1.35;
+}
+
+.pay-help-mini {
+  background: rgba(60, 200, 120, 0.15);
+  border: 1px solid rgba(60, 200, 120, 0.35);
+  border-radius: 14px;
+  padding: 12px 10px;
+  font-size: 12px;
+  color: #8eebc0;
+  text-decoration: none;
+  display: grid;
+  place-content: center;
+  white-space: nowrap;
+}
+
+.pay-test-banner {
+  background: rgba(100, 140, 255, 0.12);
+  border: 1px solid rgba(120, 160, 255, 0.3);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: #b8c9f0;
+  line-height: 1.4;
+  margin-bottom: 12px;
+}
+
+.pay-amount-hero {
+  background: #141c2e;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.pay-amount-hero .lbl {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7d8eab;
+  margin-bottom: 6px;
+}
+
+.pay-amount-hero .row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.pay-amount-hero .big {
+  font-size: 28px;
+  font-weight: 700;
+  color: #8eb6ff;
+  font-variant-numeric: tabular-nums;
+}
+
+.icon-btn {
+  border: 0;
+  background: rgba(255, 255, 255, 0.08);
+  color: #c5d4f0;
+  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  font-size: 16px;
+}

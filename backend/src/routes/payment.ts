@@ -10,6 +10,7 @@ import {
   isAdmin,
   notifyAdminsPending,
   notifyUserPaid,
+  freeTestPay,
   publicSessionAsync,
   startTransferSession,
   validateTelegramWebAppInitData,
@@ -93,11 +94,20 @@ router.post('/pay/:invitationId', async (req, res) => {
     if (action === 'declare') {
       const result = await declareTransferPaid(invitationId, auth.userId);
       if (result.ok === false) return res.status(400).json({ message: result.error });
-      try {
-        await notifyAdminsPending(invitationId);
-      } catch (err) {
-        console.error('Admin notify xato:', err);
+      // Faqat live + autoConfirm o'chiq bo'lsa adminga yuboriladi
+      if (!result.autoConfirmed) {
+        try {
+          await notifyAdminsPending(invitationId);
+        } catch (err) {
+          console.error('Admin notify xato:', err);
+        }
       }
+      return res.json(result.session);
+    }
+
+    if (action === 'test_free') {
+      const result = await freeTestPay(invitationId, auth.userId);
+      if (result.ok === false) return res.status(400).json({ message: result.error });
       return res.json(result.session);
     }
 
