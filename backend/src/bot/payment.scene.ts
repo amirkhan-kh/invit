@@ -1,9 +1,10 @@
 import { Scenes, Markup } from 'telegraf';
 import { MyContext, textOf } from './context';
 import { Invitation } from '../models/invit.back';
-import { invitationLink, paymentAppUrl, getMerchantCard } from '../config';
+import { invitationLink, paymentAppUrl } from '../config';
 import { detectLang, INVITE_TEXT } from '../utils/format';
-import { publicSession } from '../services/card-payment.service';
+import { publicSessionAsync } from '../services/card-payment.service';
+import { loadMerchantCard } from '../services/merchant-card.service';
 
 function fmt(n: number): string {
   return n.toLocaleString('ru-RU');
@@ -56,10 +57,10 @@ export const paymentScene = new Scenes.WizardScene<MyContext>(
       return ctx.scene.leave();
     }
 
-    const session = publicSession(inv);
+    const session = await publicSessionAsync(inv);
     const price = fmt(session.amount);
 
-    const cardsReady = getMerchantCard().ready;
+    const cardsReady = (await loadMerchantCard()).ready;
 
     if (!cardsReady) {
       await ctx.reply(
@@ -100,7 +101,7 @@ export const paymentScene = new Scenes.WizardScene<MyContext>(
 export async function paymentStatusText(invitationId: string): Promise<string> {
   const inv = await Invitation.findById(invitationId);
   if (!inv) return 'Taklifnoma topilmadi.';
-  const s = publicSession(inv);
+  const s = await publicSessionAsync(inv);
   if (s.isPaid) {
     return `✅ To'langan.\n🔗 ${s.invitationUrl}`;
   }

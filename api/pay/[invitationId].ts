@@ -10,7 +10,7 @@ import {
   isAdmin,
   notifyAdminsPending,
   notifyUserPaid,
-  publicSession,
+  publicSessionAsync,
   startTransferSession,
   validateTelegramWebAppInitData,
 } from '../../backend/src/services/card-payment.service';
@@ -44,7 +44,7 @@ export default async function handler(req: any, res: any) {
       if (auth && inv.telegramUserId !== auth.userId && !isAdmin(auth.userId)) {
         return res.status(403).json({ message: 'Ruxsat yo‘q' });
       }
-      return res.status(200).json(publicSession(inv));
+      return res.status(200).json(await publicSessionAsync(inv));
     }
 
     if (req.method !== 'POST') {
@@ -91,7 +91,7 @@ export default async function handler(req: any, res: any) {
       } catch (e) {
         console.error(e);
       }
-      return res.status(200).json({ ok: true, session: publicSession(result.inv) });
+      return res.status(200).json({ ok: true, session: await publicSessionAsync(result.inv) });
     }
 
     if (action === 'admin_reject') {
@@ -113,7 +113,7 @@ export default async function handler(req: any, res: any) {
       } catch (e) {
         console.error(e);
       }
-      return res.status(200).json({ ok: true, session: publicSession(result.inv) });
+      return res.status(200).json({ ok: true, session: await publicSessionAsync(result.inv) });
     }
 
     return res.status(400).json({ message: 'Noma’lum action' });

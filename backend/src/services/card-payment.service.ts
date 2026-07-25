@@ -6,14 +6,14 @@
 import crypto from 'crypto';
 import { Invitation, IInvitation, PaymentMethod, TEMPLATE_PRICES } from '../models/invit.back';
 import {
+  buildPayCards,
   config,
   formatCardDisplay,
-  getMerchantCard,
-  getPayCards,
-  getPayMethod,
+  getMerchantCardFromEnv,
   invitationLink,
   paymentAppUrl,
 } from '../config';
+import { loadMerchantCard } from './merchant-card.service';
 
 export type ProductKind = 'invitation_template'; // kelajak: 'balance_topup' | 'catalog_item'
 
@@ -74,9 +74,15 @@ function ensureNotExpired(inv: IInvitation): void {
   }
 }
 
-export function publicSession(inv: IInvitation): PaymentSessionView {
+export function publicSession(
+  inv: IInvitation,
+  merchant?: { number: string; holder: string; ready: boolean }
+): PaymentSessionView {
   ensureNotExpired(inv);
-  const method = inv.paymentMethod ? getPayMethod(inv.paymentMethod) : null;
+  const m = merchant || getMerchantCardFromEnv();
+  const cards = buildPayCards(m.number, m.holder);
+  const methodKey = (inv.paymentMethod || '') as keyof typeof cards;
+  const method = methodKey && cards[methodKey] ? cards[methodKey] : null;
   const amount = inv.paymentAmount || inv.price || TEMPLATE_PRICES[inv.templateId] || 0;
   const rem = remainingSeconds(inv.paymentExpiresAt);
 
@@ -96,18 +102,15 @@ export function publicSession(inv: IInvitation): PaymentSessionView {
     paymentMethod: inv.paymentMethod || '',
     expiresAt: inv.paymentExpiresAt ? new Date(inv.paymentExpiresAt).toISOString() : null,
     remainingSeconds: inv.paymentStatus === 'awaiting_transfer' ? rem : 0,
-    methods: (() => {
-      const cards = getPayCards();
-      return (['humo', 'uzcard', 'bankomat', 'international'] as const).map((id) => ({
-        id: cards[id].id,
-        label: cards[id].label,
-        subtitle: cards[id].subtitle,
-        enabled: cards[id].enabled,
-        soon: cards[id].soon,
-      }));
-    })(),
+    methods: (['humo', 'uzcard', 'bankomat', 'international'] as const).map((id) => ({
+      id: cards[id].id,
+      label: cards[id].label,
+      subtitle: cards[id].subtitle,
+      enabled: cards[id].enabled,
+      soon: cards[id].soon,
+    })),
     card:
-      method && inv.paymentStatus === 'awaiting_transfer' && rem > 0
+      method && inv.paymentStatus === 'awaiting_transfer' && rem > 0 && method.number
         ? {
             method: method.id,
             label: method.label,
@@ -127,6 +130,11 @@ export function publicSession(inv: IInvitation): PaymentSessionView {
     invitationUrl: inv.isPaid ? invitationLink(inv.slug, inv.templateId) : null,
     payUrl: paymentAppUrl(String(inv._id)),
   };
+}
+
+export async function publicSessionAsync(inv: IInvitation): Promise<PaymentSessionView> {
+  const merchant = await loadMerchantCard();
+  return publicSession(inv, merchant);
 }
 
 export async function getInvitationForPay(
@@ -151,8 +159,9 @@ export async function startTransferSession(
 ): Promise<{ ok: true; session: PaymentSessionView } | { ok: false; error: string }> {
   const inv = await getInvitationForPay(invitationId, telegramUserId);
   if (!inv) return { ok: false, error: 'Taklifnoma topilmadi yoki ruxsat yo‘q' };
+  const merchantEarly = await loadMerchantCard();
   if (inv.isPaid || inv.paymentStatus === 'paid') {
-    return { ok: true, session: publicSession(inv) };
+    return { ok: true, session: publicSession(inv, merchantEarly) };
   }
   if (inv.paymentStatus === 'pending_review') {
     return { ok: false, error: "To'lov tekshiruvda. Iltimos, kuting." };
@@ -162,8 +171,9 @@ export async function startTransferSession(
   if (!allowed.includes(method)) {
     return { ok: false, error: "To'lov usuli noto'g'ri" };
   }
-  if (!getMerchantCard().ready) {
-    return { ok: false, error: "To'lov kartasi sozlanmagan (admin: PAY_UZCARD_NUMBER)" };
+  const merchant = await loadMerchantCard();
+  if (!merchant.ready) {
+    return { ok: false, error: "To'lov kartasi sozlanmagan (admin: PAY_UZCARD_NUMBER yoki DB)" };
   }
 
   inv.paymentMethod = method as PaymentMethod;
@@ -174,7 +184,7 @@ export async function startTransferSession(
   inv.paymentDeclaredAt = null;
   await inv.save();
 
-  return { ok: true, session: publicSession(inv) };
+  return { ok: true, session: publicSession(inv, merchant) };
 }
 
 export async function declareTransferPaid(
@@ -183,7 +193,8 @@ export async function declareTransferPaid(
 ): Promise<{ ok: true; session: PaymentSessionView } | { ok: false; error: string }> {
   const inv = await getInvitationForPay(invitationId, telegramUserId);
   if (!inv) return { ok: false, error: 'Taklifnoma topilmadi yoki ruxsat yo‘q' };
-  if (inv.isPaid) return { ok: true, session: publicSession(inv) };
+  const merchant = await loadMerchantCard();
+  if (inv.isPaid) return { ok: true, session: publicSession(inv, merchant) };
 
   ensureNotExpired(inv);
   if (inv.paymentStatus === 'expired') {
@@ -202,7 +213,7 @@ export async function declareTransferPaid(
   inv.paymentDeclaredAt = new Date();
   await inv.save();
 
-  return { ok: true, session: publicSession(inv) };
+  return { ok: true, session: publicSession(inv, merchant) };
 }
 
 export async function cancelTransferSession(
@@ -211,7 +222,8 @@ export async function cancelTransferSession(
 ): Promise<{ ok: true; session: PaymentSessionView } | { ok: false; error: string }> {
   const inv = await getInvitationForPay(invitationId, telegramUserId);
   if (!inv) return { ok: false, error: 'Taklifnoma topilmadi' };
-  if (inv.isPaid) return { ok: true, session: publicSession(inv) };
+  const merchant = await loadMerchantCard();
+  if (inv.isPaid) return { ok: true, session: publicSession(inv, merchant) };
   if (inv.paymentStatus === 'pending_review') {
     return { ok: false, error: "Tekshiruvdagi to'lovni bekor qilib bo'lmaydi. Admin bilan bog'laning." };
   }
@@ -219,10 +231,9 @@ export async function cancelTransferSession(
   inv.paymentExpiresAt = null;
   inv.paymentMethod = '';
   await inv.save();
-  // Qayta to'lash uchun unpaid ga o'tkazamiz
   inv.paymentStatus = 'unpaid';
   await inv.save();
-  return { ok: true, session: publicSession(inv) };
+  return { ok: true, session: publicSession(inv, merchant) };
 }
 
 export async function adminConfirmPayment(

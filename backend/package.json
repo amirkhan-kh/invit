@@ -17,6 +17,7 @@
     "webhook:info": "node scripts/telegram-webhook.js info",
     "webhook:delete": "node scripts/telegram-webhook.js delete",
     "telegram:setup": "node scripts/telegram-setup.js",
+    "seed:card": "node scripts/seed-merchant-card.js",
     "bot:logs": "node scripts/bot-logs.js"
   },
   "keywords": [],

@@ -2,7 +2,7 @@
 import { connectDB } from '../../backend/src/db';
 import {
   findLatestUnpaidForUser,
-  publicSession,
+  publicSessionAsync,
   validateTelegramWebAppInitData,
 } from '../../backend/src/services/card-payment.service';
 import { config } from '../../backend/src/config';
@@ -28,7 +28,7 @@ export default async function handler(req: any, res: any) {
         message: "Ochiq to'lov yo'q. Botda /start bosing va taklifnoma yarating.",
       });
     }
-    return res.status(200).json(publicSession(inv));
+    return res.status(200).json(await publicSessionAsync(inv));
   } catch (e) {
     console.error(e);
     return res.status(500).json({ message: 'Server xatosi' });

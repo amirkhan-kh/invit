@@ -10,7 +10,7 @@ import {
   isAdmin,
   notifyAdminsPending,
   notifyUserPaid,
-  publicSession,
+  publicSessionAsync,
   startTransferSession,
   validateTelegramWebAppInitData,
 } from '../services/card-payment.service';
@@ -45,7 +45,7 @@ router.get('/pay/mine', async (req, res) => {
         message: "Ochiq to'lov yo'q. Botda /start bosing va taklifnoma yarating.",
       });
     }
-    return res.json(publicSession(inv));
+    return res.json(await publicSessionAsync(inv));
   } catch (e) {
     console.error(e);
     return res.status(500).json({ message: 'Server xatosi' });
@@ -60,7 +60,7 @@ router.get('/pay/:invitationId', async (req, res) => {
     if (auth && inv.telegramUserId !== auth.userId && !isAdmin(auth.userId)) {
       return res.status(403).json({ message: 'Ruxsat yo‘q' });
     }
-    return res.json(publicSession(inv));
+    return res.json(await publicSessionAsync(inv));
   } catch (e) {
     console.error(e);
     return res.status(500).json({ message: 'Server xatosi' });
@@ -116,7 +116,7 @@ router.post('/pay/:invitationId', async (req, res) => {
       } catch (e) {
         console.error(e);
       }
-      return res.json({ ok: true, session: publicSession(result.inv) });
+      return res.json({ ok: true, session: await publicSessionAsync(result.inv) });
     }
 
     if (action === 'admin_reject') {
@@ -141,7 +141,7 @@ router.post('/pay/:invitationId', async (req, res) => {
       } catch (e) {
         console.error(e);
       }
-      return res.json({ ok: true, session: publicSession(result.inv) });
+      return res.json({ ok: true, session: await publicSessionAsync(result.inv) });
     }
 
     return res.status(400).json({ message: 'Noma’lum action' });
@@ -189,7 +189,7 @@ router.post('/payment/click/complete', async (req, res) => {
 router.get('/payment/status/:id', async (req, res) => {
   const inv = await Invitation.findById(req.params.id).catch(() => null);
   if (!inv) return res.status(404).json({ message: 'Topilmadi' });
-  return res.json(publicSession(inv));
+  return res.json(await publicSessionAsync(inv));
 });
 
 export default router;

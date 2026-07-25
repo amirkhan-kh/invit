@@ -21,8 +21,12 @@ function parseAdminIds(raw: string | undefined): number[] {
     .filter((n) => Number.isFinite(n) && n > 0);
 }
 
-function cleanCardDigits(raw: string | undefined): string {
+export function cleanCardDigitsLike(raw: string | undefined): string {
   return String(raw || '').replace(/\D/g, '');
+}
+
+function cleanCardDigits(raw: string | undefined): string {
+  return cleanCardDigitsLike(raw);
 }
 
 export type PayMethodId = 'uzcard' | 'humo' | 'bankomat' | 'international';
@@ -37,8 +41,8 @@ export interface PayCardInfo {
   soon?: boolean;
 }
 
-/** Har so'rovda env o'qiladi (Vercel serverless + redeploy uchun) */
-export function getMerchantCard(): { number: string; holder: string; ready: boolean } {
+/** Faqat env (sinxron) */
+export function getMerchantCardFromEnv(): { number: string; holder: string; ready: boolean } {
   const number = cleanCardDigits(
     process.env.PAY_UZCARD_NUMBER ||
       process.env.PAY_HUMO_NUMBER ||
@@ -54,20 +58,21 @@ export function getMerchantCard(): { number: string; holder: string; ready: bool
   return { number, holder: holder || '—', ready: number.length >= 16 };
 }
 
-export function getPayCards(): Record<PayMethodId, PayCardInfo> {
-  const { number, holder, ready } = getMerchantCard();
-  const humoNum = cleanCardDigits(process.env.PAY_HUMO_NUMBER) || number;
-  const humoHold = (process.env.PAY_HUMO_HOLDER || holder).trim() || holder;
+/** @deprecated prefer loadMerchantCard() async — env sinxron fallback */
+export function getMerchantCard(): { number: string; holder: string; ready: boolean } {
+  return getMerchantCardFromEnv();
+}
 
-  // Bitta merchant karta bo'lsa — HUMO/UZCARD/BANKOMAT hammasi ishlaydi
-  // (mijoz o'z bank ilovasida usulni tanlaydi; biz qabul kartasini ko'rsatamiz)
+export function buildPayCards(number: string, holder: string): Record<PayMethodId, PayCardInfo> {
+  const ready = number.length >= 16;
+  const h = holder || '—';
   return {
     humo: {
       id: 'humo',
       label: 'HUMO',
       subtitle: "Kartaga o'tkazma",
-      number: humoNum,
-      holder: humoHold,
+      number,
+      holder: h,
       enabled: ready,
     },
     uzcard: {
@@ -75,7 +80,7 @@ export function getPayCards(): Record<PayMethodId, PayCardInfo> {
       label: 'UZCARD',
       subtitle: "Kartaga o'tkazma",
       number,
-      holder,
+      holder: h,
       enabled: ready,
     },
     bankomat: {
@@ -83,20 +88,24 @@ export function getPayCards(): Record<PayMethodId, PayCardInfo> {
       label: 'BANKOMAT',
       subtitle: 'Terminal orqali',
       number,
-      holder,
+      holder: h,
       enabled: ready,
     },
-    // Xalqaro — xuddi shu karta (chetdan P2P/transfer), keyin alohida Visa bo'lishi mumkin
     international: {
       id: 'international',
       label: 'XALQARO',
       subtitle: "Kartaga o'tkazma",
       number,
-      holder,
+      holder: h,
       enabled: ready,
       soon: false,
     },
   };
+}
+
+export function getPayCards(): Record<PayMethodId, PayCardInfo> {
+  const { number, holder } = getMerchantCardFromEnv();
+  return buildPayCards(number, holder);
 }
 
 export const config = {
