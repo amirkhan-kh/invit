@@ -1,25 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
 
+export type RevealVariant = 'up' | 'down' | 'left' | 'right' | 'zoom' | 'fade' | 'blur' | '3d';
+
 interface Props {
   children: React.ReactNode;
   className?: string;
-  // Animatsiya turi
-  variant?: 'up' | 'left' | 'right' | 'zoom' | 'fade';
+  variant?: RevealVariant;
   delay?: number; // ms
   once?: boolean;
 }
 
-const base: Record<NonNullable<Props['variant']>, React.CSSProperties> = {
-  up: { transform: 'translateY(40px)' },
-  left: { transform: 'translateX(-40px)' },
-  right: { transform: 'translateX(40px)' },
-  zoom: { transform: 'scale(0.9)' },
-  fade: {},
-};
-
 /**
- * Scroll qilib ko'rinish maydoniga kirganda elementni yumshoq animatsiya bilan
- * ko'rsatadi. Barcha shablonlarda qayta ishlatiladi.
+ * Scroll-triggered entrance reveal.
+ * Premium motion: ease-out decelerate, ~900ms, optional blur/3D.
  */
 const Reveal: React.FC<Props> = ({
   children,
@@ -34,6 +27,12 @@ const Reveal: React.FC<Props> = ({
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setShown(true);
+      return;
+    }
+
     const obs = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -43,21 +42,21 @@ const Reveal: React.FC<Props> = ({
           setShown(false);
         }
       },
-      { rootMargin: '-10% 0px -10% 0px' }
+      { rootMargin: '-8% 0px -8% 0px', threshold: 0.08 }
     );
     obs.observe(el);
     return () => obs.disconnect();
   }, [once]);
 
+  const classes = ['mx-reveal', `mx-reveal--${variant}`, shown ? 'is-in' : '', className]
+    .filter(Boolean)
+    .join(' ');
+
   return (
     <div
       ref={ref}
-      className={className}
-      style={{
-        opacity: shown ? 1 : 0,
-        ...(shown ? { transform: 'none' } : base[variant]),
-        transition: `opacity 0.9s ease-out ${delay}ms, transform 0.9s ease-out ${delay}ms`,
-      }}
+      className={classes}
+      style={{ transitionDelay: delay ? `${delay}ms` : undefined }}
     >
       {children}
     </div>

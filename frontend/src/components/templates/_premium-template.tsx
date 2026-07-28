@@ -10,11 +10,12 @@ import Reveal from '../../shared/Reveal';
 import { OrnamentDivider, CornerFlourish } from '../../shared/Ornament';
 import ScrollHint from '../../shared/ScrollHint';
 import { resolvePhotos } from '../../utils/photoUrl';
+import { FloatingHearts, MotionSparks } from '../../shared/FloatingDecor';
+import Parallax from '../../shared/Parallax';
 
 const MUSIC_SRC = '/audio/wedding-premium.m4a';
 
-// Suzuvchi oltin zarrachalar (deterministik)
-const particles = Array.from({ length: 22 }, (_, i) => ({
+const particles = Array.from({ length: 28 }, (_, i) => ({
   left: (i * 37 + 5) % 100,
   duration: 9 + (i % 8),
   delay: (i % 10) * 0.9,
@@ -37,9 +38,13 @@ const PremiumTemplate: React.FC<TemplateProps> = ({ data }) => {
       {/* ===== HERO ===== */}
       <section className="pr-hero">
         {heroPhoto && (
-          <div className="pr-hero-photo" style={{ backgroundImage: `url(${heroPhoto})` }} />
+          <Parallax strength={0.15} className="pr-hero-photo-wrap">
+            <div className="pr-hero-photo" style={{ backgroundImage: `url(${heroPhoto})` }} />
+          </Parallax>
         )}
         <div className="pr-hero-veil" />
+        <MotionSparks count={22} />
+        <FloatingHearts count={10} />
         {particles.map((p) => (
           <span
             key={p.key}
@@ -55,9 +60,10 @@ const PremiumTemplate: React.FC<TemplateProps> = ({ data }) => {
         ))}
         <div className="pr-hero-inner">
           <div className="pr-pretitle">Taklifnoma · {data.date}</div>
-          <div className="pr-names">{data.husband}</div>
+          <div className="mx-love-divider" style={{ color: '#e7cfa6' }} aria-hidden><span>♥</span></div>
+          <div className="pr-names mx-shimmer-text">{data.husband}</div>
           <div className="pr-amp">&</div>
-          <div className="pr-names">{data.wife}</div>
+          <div className="pr-names mx-shimmer-text">{data.wife}</div>
           <div className="pr-date">{parsed.weekday ? parsed.weekday.toUpperCase() : ''}</div>
         </div>
       </section>
@@ -66,7 +72,7 @@ const PremiumTemplate: React.FC<TemplateProps> = ({ data }) => {
       <section className="pr-section">
         <CornerFlourish className="pr-corner tl" color="#c9a36b" />
         <CornerFlourish className="pr-corner br" color="#c9a36b" />
-        <Reveal variant="up">
+        <Reveal variant="blur">
           <OrnamentDivider color="#c9a36b" />
           <h2 className="pr-heading">Hurmatli Mehmon</h2>
           <p className="pr-text">
@@ -88,7 +94,7 @@ const PremiumTemplate: React.FC<TemplateProps> = ({ data }) => {
       </Reveal>
 
       {/* ===== Sana ===== */}
-      <Reveal className="pr-section pt-0" variant="up">
+      <Reveal className="pr-section pt-0" variant="3d">
         <OrnamentDivider color="#c9a36b" width={130} />
         {parsed.monthName && (
           <p className="text-center my-5 tracking-[4px] uppercase text-sm text-[#b9ad97]">
@@ -113,7 +119,6 @@ const PremiumTemplate: React.FC<TemplateProps> = ({ data }) => {
         </div>
       </Reveal>
 
-      {/* ===== Rasmlar (bo'lsa) ===== */}
       {photos.length > 0 && (
         <Reveal className="pt-2 pb-4" variant="fade">
           <p className="text-center mb-3 tracking-[5px] uppercase text-[12px] text-[#c9a36b]">
@@ -137,6 +142,7 @@ const PremiumTemplate: React.FC<TemplateProps> = ({ data }) => {
 
       {/* ===== Footer ===== */}
       <footer className="pr-footer">
+        <FloatingHearts count={6} />
         <OrnamentDivider color="#c9a36b" width={110} />
         <p className="fn mt-5">
           {data.husband} & {data.wife}

@@ -38,15 +38,15 @@ const Countdown: React.FC<Props> = ({ target, accent = '#c9a36b', labelColor = '
   return (
     <div className="flex items-center justify-center gap-3">
       {items.map((it, i) => (
-        <div key={i} className="flex flex-col items-center">
+        <div key={i} className="flex flex-col items-center mx-reveal is-in" style={{ transitionDelay: `${i * 60}ms` }}>
           <div
-            className="grid place-content-center rounded-2xl text-2xl font-bold"
+            className="grid place-content-center rounded-2xl text-2xl font-bold transition-transform duration-300 hover:-translate-y-1"
             style={{
               width: 60,
               height: 64,
               color: '#3a2c14',
               background: 'rgba(255,255,255,0.96)',
-              boxShadow: '0 8px 20px rgba(0,0,0,0.22)',
+              boxShadow: `0 8px 20px rgba(0,0,0,0.18), 0 0 0 1px ${accent}44`,
               border: `1.5px solid ${accent}`,
             }}
           >

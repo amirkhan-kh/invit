@@ -31,11 +31,24 @@
       gap: 10px;
       transform: scale(0.85);
       opacity: 0;
-      animation: zoomText 1.6s ease-out forwards;
+      animation: zoomText 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      position: relative;
+      z-index: 5;
+
+      .intro-photo {
+        transition: transform 450ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 450ms ease;
+        box-shadow: 0 16px 36px rgba(120, 90, 40, 0.22);
+      }
+      .intro-photo:hover {
+        transform: scale(1.04) translateY(-4px);
+        box-shadow: 0 22px 48px rgba(120, 90, 40, 0.3);
+      }
 
       .ringframe {
         border: 1.5px solid #c9a36b;
         background: linear-gradient(135deg, #fff 0%, #f3e8d6 100%);
+        box-shadow: 0 12px 28px rgba(201, 163, 107, 0.2);
+        animation: ringPulse 3s ease-in-out infinite;
       }
 
       .dateChip {
@@ -114,6 +127,14 @@
     }
     50% {
       transform: translateY(6px);
+    }
+  }
+  @keyframes ringPulse {
+    0%, 100% {
+      box-shadow: 0 12px 28px rgba(201, 163, 107, 0.2), 0 0 0 0 rgba(201, 163, 107, 0.25);
+    }
+    50% {
+      box-shadow: 0 16px 36px rgba(201, 163, 107, 0.28), 0 0 0 8px rgba(201, 163, 107, 0);
     }
   }
 }

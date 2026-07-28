@@ -5,15 +5,16 @@ import { useBackgroundMusic } from '../../shared/useBackgroundMusic';
 import MusicToggle from '../../shared/MusicToggle';
 import ScrollHint from '../../shared/ScrollHint';
 import PhotoGallery from '../../shared/PhotoGallery';
+import Reveal from '../../shared/Reveal';
+import { FloatingHearts } from '../../shared/FloatingDecor';
 
-// Fon musiqasi manzili — o'z trekingizni public/audio/ ga tashlab, shu yo'lni yozing
 const MUSIC_SRC = '/audio/wedding-medium.m4a';
 
 const MediumTemplate: React.FC<TemplateProps> = ({ data }) => {
   const { audioRef, isPlaying, toggle } = useBackgroundMusic(MUSIC_SRC);
 
   return (
-    <main className="relative">
+    <main className="relative tpl-medium">
       <audio
         ref={audioRef}
         src={MUSIC_SRC}
@@ -30,21 +31,23 @@ const MediumTemplate: React.FC<TemplateProps> = ({ data }) => {
       <Intro data={data} />
       <IntroWish data={data} />
 
-      {/* Qo'shimcha rasmlar bo'lsa — galereya ochiladi, bo'lmasa hech narsa chizilmaydi */}
       {data.photos && data.photos.length > 0 && (
-        <section className="bg-[#faf6ef] py-4">
-          <PhotoGallery photos={data.photos} accent="#c9a36b" />
-        </section>
+        <Reveal variant="fade">
+          <section className="bg-[#faf6ef] py-4">
+            <PhotoGallery photos={data.photos} accent="#c9a36b" />
+          </section>
+        </Reveal>
       )}
 
       <DateSection data={data} />
       <Timing data={data} />
 
-      <footer className="bg-[#3f5c74] text-center py-8 text-white/90">
-        <p className="font-script text-3xl text-[#e7cfa6]">
+      <footer className="bg-[#3f5c74] text-center py-8 text-white/90 relative overflow-hidden">
+        <FloatingHearts count={5} />
+        <p className="font-script text-3xl text-[#e7cfa6] relative z-[1]">
           {data.husband} & {data.wife}
         </p>
-        <p className="text-xs tracking-[3px] mt-1">{data.date}</p>
+        <p className="text-xs tracking-[3px] mt-1 relative z-[1]">{data.date}</p>
       </footer>
     </main>
   );

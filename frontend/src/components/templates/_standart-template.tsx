@@ -8,11 +8,11 @@ import PhotoGallery from '../../shared/PhotoGallery';
 import Countdown from '../../shared/Countdown';
 import Reveal from '../../shared/Reveal';
 import ScrollHint from '../../shared/ScrollHint';
+import { FloatingHearts, MotionSparks } from '../../shared/FloatingDecor';
 
 const MUSIC_SRC = '/audio/wedding-standard.m4a';
 
-// Deterministik gulbarglar (Math.random ishlatmasdan)
-const petals = Array.from({ length: 10 }, (_, i) => ({
+const petals = Array.from({ length: 14 }, (_, i) => ({
   left: (i * 41 + 7) % 100,
   duration: 7 + (i % 5),
   delay: (i % 6) * 1.1,
@@ -31,6 +31,8 @@ const StandardTemplate: React.FC<TemplateProps> = ({ data }) => {
 
       {/* HERO */}
       <section className="std-hero">
+        <MotionSparks count={16} />
+        <FloatingHearts count={8} />
         {petals.map((p) => (
           <span
             key={p.key}
@@ -40,6 +42,7 @@ const StandardTemplate: React.FC<TemplateProps> = ({ data }) => {
         ))}
         <div className="std-hero-inner">
           <div className="std-label">Taklifnoma</div>
+          <div className="mx-love-divider" aria-hidden><span>♥</span></div>
           <div className="std-mono">
             {data.husband?.[0]}
             {data.wife?.[0]}
@@ -54,7 +57,7 @@ const StandardTemplate: React.FC<TemplateProps> = ({ data }) => {
       </section>
 
       {/* Taklif matni */}
-      <Reveal className="std-section" variant="up">
+      <Reveal className="std-section" variant="blur">
         <div className="std-divider" />
         <h2 className="std-heading">Hurmatli Mehmon!</h2>
         <p className="std-text">
@@ -75,7 +78,7 @@ const StandardTemplate: React.FC<TemplateProps> = ({ data }) => {
       </Reveal>
 
       {/* Sana */}
-      <Reveal className="std-section pt-0" variant="up">
+      <Reveal className="std-section pt-0" variant="3d">
         {parsed.monthName && (
           <p className="text-center mb-5 tracking-[3px] uppercase text-sm text-[#a8977f]">
             {parsed.weekday}, {parsed.monthName} {parsed.year}
@@ -99,7 +102,6 @@ const StandardTemplate: React.FC<TemplateProps> = ({ data }) => {
         </div>
       </Reveal>
 
-      {/* Rasmlar (bo'lsa) */}
       {data.photos && data.photos.length > 0 && (
         <Reveal variant="fade">
           <PhotoGallery photos={data.photos} accent="#a8bb9a" />
@@ -118,6 +120,7 @@ const StandardTemplate: React.FC<TemplateProps> = ({ data }) => {
 
       {/* Footer */}
       <footer className="std-footer">
+        <FloatingHearts count={5} />
         <p className="fnames">
           {data.husband} & {data.wife}
         </p>

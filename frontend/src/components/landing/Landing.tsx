@@ -1,5 +1,8 @@
 import './Landing.scss';
 import Reveal from '../../shared/Reveal';
+import PageLoader from '../../shared/PageLoader';
+import { FloatingHearts, MotionSparks } from '../../shared/FloatingDecor';
+import Parallax from '../../shared/Parallax';
 import { DEMO_LIST } from '../../preview/demoData';
 import { parseWeddingDate, TEMPLATE_PRICES } from '../../types/invitation.types';
 import {
@@ -15,7 +18,6 @@ import { FaTelegramPlane, FaInstagram } from 'react-icons/fa';
 const BOT = 'https://t.me/ceremony_invit_bot';
 const CONTACT = 'https://t.me/elnox_uz';
 
-// Har shablon uchun namuna (portfolio demo) havolasi
 const DEMO_FOR: Record<string, string> = {
   standard: 'jasurnigora',
   medium: 'azizmalika',
@@ -23,14 +25,6 @@ const DEMO_FOR: Record<string, string> = {
 };
 
 const fmt = (n: number) => n.toLocaleString('ru-RU');
-
-const SPARKS = Array.from({ length: 38 }, (_, i) => ({
-  top: (i * 37 + 6) % 96,
-  left: (i * 53 + 9) % 98,
-  size: 2 + (i % 4),
-  delay: (i % 7) * 0.4,
-  key: i,
-}));
 
 const FEATURES = [
   { icon: <HiOutlineMusicNote />, title: 'Fon musiqasi', text: 'Har bir taklifnoma yumshoq, nafis kuy bilan ochiladi.' },
@@ -53,7 +47,7 @@ const TPLS = [
   { id: 'premium', name: 'Premium', cap: 'linear-gradient(135deg,#1a2c22,#c9a36b)', price: TEMPLATE_PRICES.premium, feats: ['Kinematografik dizayn', 'Oltin animatsiyalar', 'Barcha imkoniyatlar'] },
 ];
 
-function TelegramBtn({ className = 'l-btn l-btn-primary', label = 'Telegram botda yaratish' }: { className?: string; label?: string }) {
+function TelegramBtn({ className = 'l-btn l-btn-primary mx-press', label = 'Telegram botda yaratish' }: { className?: string; label?: string }) {
   return (
     <a href={BOT} target="_blank" rel="noopener noreferrer" className={className}>
       <FaTelegramPlane /> {label}
@@ -63,8 +57,9 @@ function TelegramBtn({ className = 'l-btn l-btn-primary', label = 'Telegram botd
 
 function SectionHead({ eyebrow, title, lead, light }: { eyebrow: string; title: string; lead: string; light?: boolean }) {
   return (
-    <Reveal variant="up">
+    <Reveal variant="blur">
       <div className="l-eyebrow" style={light ? { color: '#e7cfa6' } : undefined}>{eyebrow}</div>
+      <div className="mx-love-divider" aria-hidden><span>♥</span></div>
       <h2 className="l-title">{title}</h2>
       <p className="l-lead">{lead}</p>
     </Reveal>
@@ -74,6 +69,8 @@ function SectionHead({ eyebrow, title, lead, light }: { eyebrow: string; title: 
 export default function Landing() {
   return (
     <div className="landing">
+      <PageLoader label="baxt.uz" minMs={650} />
+
       {/* ===== NAV ===== */}
       <nav className="l-nav">
         <div className="brand l-script">
@@ -86,36 +83,40 @@ export default function Landing() {
           <a href="#namunalar">Namunalar</a>
           <a href="#narxlar">Narxlar</a>
         </div>
-        <TelegramBtn className="l-btn l-btn-primary" label="Boshlash" />
+        <TelegramBtn className="l-btn l-btn-primary mx-press" label="Boshlash" />
       </nav>
 
       {/* ===== HERO ===== */}
       <header className="l-hero">
-        {SPARKS.map((s) => (
-          <span key={s.key} className="l-spark" style={{ top: `${s.top}%`, left: `${s.left}%`, width: s.size, height: s.size, animationDelay: `${s.delay}s` }} />
-        ))}
-        <div style={{ position: 'relative', zIndex: 2 }}>
+        <MotionSparks count={42} />
+        <FloatingHearts count={12} />
+        <div className="l-hero-glow mx-ambient-glow" aria-hidden />
+        <Parallax strength={0.12} className="l-hero-content">
           <div className="pretitle">Premium onlayn taklifnomalar</div>
-          <h1 className="l-gold-text">Baxtli kuningiz — bitta havolada</h1>
+          <h1 className="mx-shimmer-text">Baxtli kuningiz — bitta havolada</h1>
           <p className="sub">
             Animatsiya, musiqa, xarita va countdown bilan bezatilgan zamonaviy to'y taklifnomasi.
             Telegram bot orqali bir necha daqiqada yarating.
           </p>
           <div className="cta-row">
             <TelegramBtn />
-            <a href="#namunalar" className="l-btn l-btn-ghost">Namunalarni ko'rish</a>
+            <a href="#namunalar" className="l-btn l-btn-ghost mx-press">Namunalarni ko'rish</a>
           </div>
-        </div>
+        </Parallax>
       </header>
 
       {/* ===== AFZALLIKLAR ===== */}
-      <section className="l-section">
-        <SectionHead eyebrow="Afzalliklar" title="Nega aynan biz?" lead="Qog'oz taklifnoma o'rniga — jonli, interaktiv va esda qoladigan raqamli taassurot." />
+      <section className="l-section l-features-section">
+        <SectionHead
+          eyebrow="Afzalliklar"
+          title="Nega aynan biz?"
+          lead="Qog'oz taklifnoma o'rniga — jonli, interaktiv va esda qoladigan raqamli taassurot."
+        />
         <div className="l-features">
           {FEATURES.map((f, i) => (
-            <Reveal key={f.title} variant={i % 2 === 0 ? 'left' : 'right'} delay={(i % 3) * 90}>
-              <div className="l-feat">
-                <div className="ic">{f.icon}</div>
+            <Reveal key={f.title} variant={i % 2 === 0 ? 'left' : 'right'} delay={(i % 3) * 80}>
+              <div className="l-feat mx-hover-lift mx-hover-glow mx-tilt">
+                <div className="ic mx-icon-pop">{f.icon}</div>
                 <h3>{f.title}</h3>
                 <p>{f.text}</p>
               </div>
@@ -125,13 +126,18 @@ export default function Landing() {
       </section>
 
       {/* ===== JARAYON ===== */}
-      <section className="l-section" id="jarayon" style={{ background: '#fff' }}>
-        <SectionHead eyebrow="Jarayon" title="Uch oddiy qadam" lead="Dizayner ham, dastur ham kerak emas — hammasi Telegram bot ichida." />
+      <section className="l-section l-process" id="jarayon">
+        <SectionHead
+          eyebrow="Jarayon"
+          title="Uch oddiy qadam"
+          lead="Dizayner ham, dastur ham kerak emas — hammasi Telegram bot ichida."
+        />
         <div className="l-steps">
+          <div className="mx-step-line" aria-hidden />
           {STEPS.map((s, i) => (
-            <Reveal key={s.n} variant="up" delay={i * 130}>
+            <Reveal key={s.n} variant="3d" delay={i * 120}>
               <div className="l-step">
-                <div className="num l-play">{s.n}</div>
+                <div className="num l-play mx-pulse-ring">{s.n}</div>
                 <h3>{s.title}</h3>
                 <p>{s.text}</p>
               </div>
@@ -142,18 +148,25 @@ export default function Landing() {
 
       {/* ===== SHABLONLAR ===== */}
       <section className="l-section" id="shablonlar">
-        <SectionHead eyebrow="Shablonlar" title="Uch uslub — har didga" lead="Har birini haqiqiy namuna orqali jonli ko'rib chiqing va mosini tanlang." />
+        <SectionHead
+          eyebrow="Shablonlar"
+          title="Uch uslub — har didga"
+          lead="Har birini haqiqiy namuna orqali jonli ko'rib chiqing va mosini tanlang."
+        />
         <div className="l-tpls">
           {TPLS.map((t, i) => (
-            <Reveal key={t.id} variant="up" delay={i * 110}>
-              <div className="l-tpl">
-                <div className="cap" style={{ background: t.cap }}>{t.name}</div>
+            <Reveal key={t.id} variant="up" delay={i * 100}>
+              <div className="l-tpl mx-hover-lift mx-tilt">
+                <div className="cap" style={{ background: t.cap }}>
+                  <span className="cap-heart" aria-hidden>♥</span>
+                  {t.name}
+                </div>
                 <div className="body">
                   <div className="price l-play">{fmt(t.price)} <small>so'm</small></div>
                   <ul>
                     {t.feats.map((f) => <li key={f}>{f}</li>)}
                   </ul>
-                  <a href={`/preview/${t.id}/${DEMO_FOR[t.id]}`} className="l-btn l-btn-primary" style={{ marginTop: 'auto' }}>
+                  <a href={`/preview/${t.id}/${DEMO_FOR[t.id]}`} className="l-btn l-btn-primary mx-press" style={{ marginTop: 'auto' }}>
                     Namunani ko'rish
                   </a>
                 </div>
@@ -166,13 +179,17 @@ export default function Landing() {
       {/* ===== NAMUNALAR / MIJOZLAR ===== */}
       <div className="l-portfolio-wrap" id="namunalar">
         <section className="l-section">
-          <SectionHead eyebrow="Mijozlar" title="Biz tayyorlagan taklifnomalar" lead="Kartaga bosing (yoki ustiga oling — to'xtaydi) — haqiqiy taklifnoma qanday ko'rinishini jonli sinab ko'ring." />
+          <SectionHead
+            eyebrow="Mijozlar"
+            title="Biz tayyorlagan taklifnomalar"
+            lead="Kartaga bosing (yoki ustiga oling — to'xtaydi) — haqiqiy taklifnoma qanday ko'rinishini jonli sinab ko'ring."
+          />
           <div className="l-marquee">
             <div className="l-marquee-track">
               {[...DEMO_LIST, ...DEMO_LIST].map((d, i) => {
                 const p = parseWeddingDate(d.date);
                 return (
-                  <a className="l-card" key={`${d.slug}-${i}`} href={`/preview/${d.templateId}/${d.slug}`}>
+                  <a className="l-card mx-hover-lift" key={`${d.slug}-${i}`} href={`/preview/${d.templateId}/${d.slug}`}>
                     <div className="ph" style={{ backgroundImage: `url(${d.cover})` }} />
                     <div className="veil" />
                     <span className="badge">{d.templateId}</span>
@@ -194,18 +211,23 @@ export default function Landing() {
       {/* ===== NARXLAR ===== */}
       <div className="l-pricing-wrap" id="narxlar">
         <section className="l-section">
-          <SectionHead eyebrow="Narxlar" title="Bir martalik to'lov" lead="Yashirin to'lovlarsiz. Havola doimiy — to'y kunigacha faol turadi." light />
+          <SectionHead
+            eyebrow="Narxlar"
+            title="Bir martalik to'lov"
+            lead="Yashirin to'lovlarsiz. Havola doimiy — to'y kunigacha faol turadi."
+            light
+          />
           <div className="l-prices">
             {TPLS.map((t, i) => (
-              <Reveal key={t.id} variant="up" delay={i * 110}>
-                <div className={`l-price${t.id === 'medium' ? ' feat' : ''}`}>
+              <Reveal key={t.id} variant="zoom" delay={i * 100}>
+                <div className={`l-price mx-hover-lift${t.id === 'medium' ? ' feat' : ''}`}>
                   <div className="tier">{t.name}</div>
                   <div className="amt l-play">{fmt(t.price)} <small>so'm</small></div>
                   <ul>
                     {t.feats.map((f) => <li key={f}>{f}</li>)}
                     <li>Shaxsiy havola</li>
                   </ul>
-                  <TelegramBtn className="l-btn l-btn-primary" label="Tanlash" />
+                  <TelegramBtn className="l-btn l-btn-primary mx-press" label="Tanlash" />
                 </div>
               </Reveal>
             ))}
@@ -215,8 +237,11 @@ export default function Landing() {
 
       {/* ===== CTA ===== */}
       <section className="l-cta">
+        <MotionSparks count={24} />
+        <FloatingHearts count={8} />
         <Reveal variant="zoom">
-          <h2 className="l-gold-text">Baxtingizni ulashing</h2>
+          <div className="mx-love-divider" style={{ color: '#e7cfa6' }} aria-hidden><span>♥</span></div>
+          <h2 className="mx-shimmer-text">Baxtingizni ulashing</h2>
           <p>Bugun o'z to'y taklifnomangizni yarating — bir necha daqiqada tayyor bo'ladi.</p>
           <TelegramBtn />
         </Reveal>

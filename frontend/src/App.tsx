@@ -7,6 +7,7 @@ import { getDemo } from './preview/demoData';
 import Landing from './components/landing/Landing';
 import PayApp from './pay/PayApp';
 import { resolvePhotos } from './utils/photoUrl';
+import PageLoader from './shared/PageLoader';
 
 // URL:
 //   /                          -> Landing
@@ -101,12 +102,7 @@ function App() {
   }
 
   if (!result) {
-    return (
-      <Centered>
-        <div className="font-script text-4xl text-[#c9a36b]">Taklifnoma</div>
-        <div className="animate-pulse text-sm tracking-widest uppercase">Yuklanmoqda...</div>
-      </Centered>
-    );
+    return <PageLoader label="Taklifnoma" minMs={400} />;
   }
 
   if (result.status === 'notfound') {
