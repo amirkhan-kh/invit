@@ -106,7 +106,7 @@ async function main() {
     telegramUserId: 999,
   });
   const rt = await payWithTestCard(String(inv2._id));
-  check('Test kartasi bilan darhol to\'landi', rt.isPaid === true && rt.amountPaid === 110000);
+  check('Test kartasi bilan darhol to\'landi', rt.isPaid === true && rt.amountPaid === TEMPLATE_PRICES.standard);
 
   await mongoose.disconnect();
   await mongod.stop();

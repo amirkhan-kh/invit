@@ -160,7 +160,7 @@ export async function getInvitationForPay(
 }
 
 function transferAmountFor(inv: IInvitation): number {
-  // Real to'lov: shablon narxi (premium = 2000 va h.k.)
+  // Real to'lov: shablon narxi (standard/medium/premium)
   return inv.price || TEMPLATE_PRICES[inv.templateId] || 0;
 }
 
@@ -249,6 +249,11 @@ export async function declareTransferPaid(
 
   inv.paymentStatus = 'pending_review';
   await inv.save();
+  try {
+    await notifyUserPendingReview(inv);
+  } catch (e) {
+    console.error('pending review user notify:', e);
+  }
   return { ok: true, session: publicSession(inv, merchant), autoConfirmed: false };
 }
 
@@ -356,6 +361,7 @@ export async function adminRejectPayment(
   if (!inv) return { ok: false, error: 'Topilmadi' };
   if (inv.isPaid) return { ok: false, error: 'Allaqachon to‘langan' };
   const uid = inv.telegramUserId;
+  const names = `${inv.wife} & ${inv.husband}`;
   await deleteUnpaidInvitation(inv);
   try {
     const { hideShopMenuForUser } = await import('./menu-button.service');
@@ -363,7 +369,60 @@ export async function adminRejectPayment(
   } catch {
     /* ignore */
   }
+  try {
+    await notifyUserRejected(uid, names, reason);
+  } catch (e) {
+    console.error('reject user notify:', e);
+  }
   return { ok: true, deleted: true };
+}
+
+/** Foydalanuvchiga: to'lov tekshiruvda */
+export async function notifyUserPendingReview(inv: {
+  telegramUserId: number;
+  husband: string;
+  wife: string;
+  price: number;
+  paymentAmount?: number;
+}): Promise<void> {
+  const { getBot } = await import('../bot/bot');
+  const bot = getBot();
+  const amount = (inv.paymentAmount || inv.price).toLocaleString('ru-RU');
+  const text =
+    `⏳ *To'lovingiz tekshiruvda*\n\n` +
+    `👰 ${inv.wife} & 🤵 ${inv.husband}\n` +
+    `💰 ${amount} so'm\n\n` +
+    `Admin kartaga tushganini tekshiradi.\n` +
+    `Tasdiqlangach, *shaxsiy havola shu chatga* keladi.\n` +
+    `_Odatda bir necha daqiqa ichida._`;
+  try {
+    await bot.telegram.sendMessage(inv.telegramUserId, text, { parse_mode: 'Markdown' });
+  } catch (e) {
+    console.error('notifyUserPendingReview:', e);
+  }
+}
+
+/** Foydalanuvchiga: to'lov rad etildi */
+export async function notifyUserRejected(
+  telegramUserId: number,
+  names: string,
+  reason?: string
+): Promise<void> {
+  const { getBot } = await import('../bot/bot');
+  const bot = getBot();
+  const support = config.supportUsername;
+  const why = reason && reason !== 'Admin rad etdi' ? `\nSabab: ${reason}` : '';
+  const text =
+    `❌ *To'lov tasdiqlanmadi*\n\n` +
+    (names ? `Taklifnoma: ${names}\n` : '') +
+    `Draft o'chirildi. Qaytadan: /start` +
+    why +
+    `\n\n📩 Savol: @${support}`;
+  try {
+    await bot.telegram.sendMessage(telegramUserId, text, { parse_mode: 'Markdown' });
+  } catch (e) {
+    console.error('notifyUserRejected:', e);
+  }
 }
 
 /** Telegram WebApp initData tekshiruvi */
@@ -422,7 +481,13 @@ export async function findLatestUnpaidForUser(telegramUserId: number): Promise<I
 /** Adminlarga "to'lov tekshiruvi" xabari (bot lazy import — circular dependency yo'q) */
 export async function notifyAdminsPending(invitationId: string): Promise<void> {
   const inv = await Invitation.findById(invitationId);
-  if (!inv || !config.adminTelegramIds.length) return;
+  if (!inv) return;
+  if (!config.adminTelegramIds.length) {
+    console.error(
+      'notifyAdminsPending: ADMIN_TELEGRAM_IDS bo‘sh — admin xabar olmaydi. Botda /whoami bilan ID oling.'
+    );
+    return;
+  }
   const { getBot } = await import('../bot/bot');
   const bot = getBot();
   const amount = (inv.paymentAmount || inv.price).toLocaleString('ru-RU');
@@ -433,7 +498,8 @@ export async function notifyAdminsPending(invitationId: string): Promise<void> {
     `💳 ${amount} so'm · ${(inv.paymentMethod || '').toUpperCase()}\n` +
     `👤 User: ${inv.telegramUserId}` +
     (inv.telegramUsername ? ` (@${inv.telegramUsername})` : '') +
-    `\nID: \`${inv._id}\``;
+    `\nID: \`${inv._id}\`\n\n` +
+    `_Kartaga tushganini tekshiring, keyin ✅ yoki ❌_`;
 
   const reply_markup = {
     inline_keyboard: [
@@ -448,7 +514,11 @@ export async function notifyAdminsPending(invitationId: string): Promise<void> {
     try {
       await bot.telegram.sendMessage(adminId, text, { parse_mode: 'Markdown', reply_markup });
     } catch (e) {
-      console.error('Admin xabar xato', adminId, e);
+      console.error(
+        'Admin xabar xato (admin botga /start bosganmi?):',
+        adminId,
+        e
+      );
     }
   }
 }

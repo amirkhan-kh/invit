@@ -2,8 +2,8 @@
 export type TemplateId = 'standard' | 'medium' | 'premium';
 
 export const TEMPLATE_PRICES: Record<TemplateId, number> = {
-  standard: 110000,
-  medium: 150000,
+  standard: 50000,
+  medium: 70000,
   premium: 2000,
 };
 

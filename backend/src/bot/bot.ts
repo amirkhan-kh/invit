@@ -152,10 +152,25 @@ export function createBot(): Telegraf<MyContext> {
     );
   });
 
+  // /whoami — Telegram user id (ADMIN_TELEGRAM_IDS uchun)
+  bot.command('whoami', async (ctx) => {
+    if (!ctx.from) return;
+    const admin = isAdmin(ctx.from.id);
+    await ctx.reply(
+      `🆔 *Sizning Telegram ID:* \`${ctx.from.id}\`\n` +
+        (ctx.from.username ? `Username: @${ctx.from.username}\n` : '') +
+        `Admin: ${admin ? '✅ ha' : '❌ yo‘q'}\n\n` +
+        (admin
+          ? 'To‘lovlar kelganda shu botda ✅/❌ tugmalari chiqadi.\nKutilayotganlar: /pending'
+          : 'Admin qilish: ushbu ID ni `ADMIN_TELEGRAM_IDS` ga qo‘ying (Vercel/.env) va redeploy qiling.'),
+      { parse_mode: 'Markdown' }
+    );
+  });
+
   // Admin: /pending — kutilayotgan to'lovlar
   bot.command('pending', async (ctx) => {
     if (!ctx.from || !isAdmin(ctx.from.id)) {
-      return ctx.reply('Faqat admin uchun.');
+      return ctx.reply('Faqat admin uchun. ID ni bilish: /whoami');
     }
     const list = await Invitation.find({ paymentStatus: 'pending_review' })
       .sort({ paymentDeclaredAt: 1 })
@@ -258,7 +273,9 @@ export function createBot(): Telegraf<MyContext> {
 
   bot.help((ctx) =>
     ctx.reply(
-      "Yangi taklifnoma yaratish uchun /start bosing.\n\n📩 Savol yoki yordam: @elnox_uz"
+      "Yangi taklifnoma yaratish uchun /start bosing.\n\n" +
+        "Admin: /whoami · /pending\n\n" +
+        "📩 Savol yoki yordam: @elnox_uz"
     )
   );
 

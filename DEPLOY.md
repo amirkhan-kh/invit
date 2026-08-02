@@ -36,16 +36,29 @@ git push origin main
 | `PAY_HUMO_HOLDER` | (ixtiyoriy) |
 | `PAY_SESSION_MINUTES` | `7` |
 | `ADMIN_TELEGRAM_IDS` | Admin Telegram user id (vergul bilan bir nechta) |
+| `PAY_AUTO_CONFIRM` | `false` (real: admin tasdiqlaydi). Test uchun `true` |
+| `SUPPORT_USERNAME` | `elnox_uz` (ixtiyoriy) |
 
    > `PORT` QO'SHMANG. `BASE_URL` va `API_PUBLIC_URL` — bir xil (Vercel domeningiz).
    > Domenni birinchi deploy'dan keyin bilib olib, keyin bu 2 qiymatni yangilab **Redeploy** qiling.
+
+### Admin sozlash (eng oddiy — alohida bot kerak emas)
+
+1. `@elnox_uz` (yoki admin) **shu botga** kirib `/start` bosadi (bot xabar yubora olsin).
+2. Botda `/whoami` yozadi — chiqqan raqamli ID ni `ADMIN_TELEGRAM_IDS` ga qo‘yadi (lokal `.env` + Vercel env).
+3. Redeploy.
+4. Keyin mijoz «To‘lov qildim» bosganda adminga **shu bot chatida** 🔔 xabar + ✅/❌ tugmalari keladi.
+5. Kutilayotganlar ro‘yxati: `/pending`.
+
+> Yangi bot ochish shart emas — bitta botda mijoz ham, admin tasdiqi ham ishlaydi.
 
 ### To'lov oqimi (karta o'tkazma)
 
 1. Mijoz shablon yaratadi → bot **Mini App** (`/pay/<id>`) ochadi.
 2. HUMO / UZCARD tanlaydi → karta + timer → o'tkazadi → «To'lov qildim».
-3. Admin Telegramda ✅ tasdiqlaydi (`/pending` yoki tugma).
-4. Mijozga havola yuboriladi, taklifnoma ochiladi.
+3. Mijozga «tekshiruvda» xabari; adminga tasdiq xabari.
+4. Admin ✅ → mijoz chatiga **shaxsiy havola** yuboriladi.
+5. Admin ❌ → draft o‘chadi, mijozga rad xabari.
 
 BotFather → Bot Settings → **Domain** ga Vercel domenini qo'shing (Mini App uchun).
 
